@@ -1,0 +1,26 @@
+# CALL: wget -qO- https://cutt.ly/mostraIP |sh
+
+
+# Exibindo as informações da conta
+#aws sts get-caller-identity
+
+# Buscando informações de todas as suas instâncias ec2 em execução na sua conta AWS
+aws ec2 describe-instances --query "Reservations[*].Instances[*].{ \
+        \"1_Name\":Tags[?Key=='Name']|[0].Value, \
+        \"2_Tipo\":InstanceType, \
+        \"3_Zone\":Placement.AvailabilityZone, \
+        \"4_PublicIP\":PublicIpAddress}" \
+    --filters "Name=instance-state-name,Values=running" \
+    --output table
+
+# Exibindo o link para o download da Chave Privada
+echo ""
+echo "ATENÇÃO: Se sua instância foi criada pelo script awscode do Prof. Santiago ela pode ser acessível pela"
+echo " chave privada (.pem): \033[1mhttps://cutt.ly/chaveVM\033[0m"
+echo ""
+echo "Considere usar esse comando para copiar a chave para seu ambiente local:"
+echo ""
+echo "CMD (Prompt de Comandos): \033[31mcurl -L -s -o chaveVM.pem https://cutt.ly/chaveVM\033[0m"
+echo ""
+echo "Acessando a VM: \033[31mssh -i chaveVM.pem admin@IP_DO_SEU_SERVIDOR\033[0m"
+echo ""
