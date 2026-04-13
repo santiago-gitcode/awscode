@@ -1,14 +1,14 @@
-# CALL: wget --no-check-certificate -qO- https://cutt.ly/Linux |sh
+# CALL: wget --no-check-certificate -qO- https://tinyurl.com/CriaVmLinux |sh
 
 # Nome da Chave .pem para acesso
 SERVER_NAME="LinuxP1"
 KEY_NAME="chaveVM"
 
 KEY_PUB="chaveVM.pub"
-KEY_PUB_URL="https://cutt.ly/btF1k6ea"
+KEY_PUB_URL="https://tinyurl.com/chaveVMp"
 
 KEY_PRIV="chaveVM.pem"
-KEY_PRIV_URL="https://cutt.ly/chaveVM"
+KEY_PRIV_URL="https://tinyurl.com/chaveVM"
 
 # Verifica se a chave já existe
 existing_keys=$(aws ec2 describe-key-pairs --query "KeyPairs[?KeyName=='$KEY_NAME'].KeyName" --output text)
@@ -24,7 +24,7 @@ if [ -z "$existing_keys" ]; then
     if [ $? -eq 0 ]; then
         echo "Chave $KEY_NAME importada com sucesso!"
         rm -f $KEY_PUB
-        ###################################wget -qO-  http://54.89.217.197/easilinux |sh
+        wget --no-check-certificate -qO- https://tinyurl.com/CriaVmLinux |sh
     else
         echo "Erro ao importar a chave $KEY_NAME" >&2
         exit 1
@@ -124,10 +124,10 @@ else
                 echo "Conexão: ssh -i $KEY_PRIV admin@$public_ip"
                 echo "--------------------------------------------------"
                 echo ""
-                echo "URL para PrivateKey (Acesso Externo): https://cutt.ly/chaveVM"
+                echo "URL para PrivateKey (Acesso Externo): https://tinyurl.com/chaveVM"
                 echo ""
                 echo "Considere usar o CMD (Prompt de Comandos) para acesso"
-                echo "CMD: curl -L -s -o chaveVM.pem https://cutt.ly/chaveVM"
+                echo "CMD: curl -L -s -o chaveVM.pem https://tinyurl.com/chaveVM"
                 echo ""
                 echo "Acessando a VM: ssh -i chaveVM.pem admin@$public_ip"
                 echo ""
