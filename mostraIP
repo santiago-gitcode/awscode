@@ -1,4 +1,4 @@
-# CALL: wget --no-check-certificate -qO- https://cutt.ly/mostraIP |sh
+# CALL: wget --no-check-certificate -qO- https://tinyurl.com/exibeIP |sh
 
 
 # Exibindo as informações da conta
@@ -16,11 +16,11 @@ aws ec2 describe-instances --query "Reservations[*].Instances[*].{ \
 # Exibindo o link para o download da Chave Privada
 echo ""
 echo "ATENÇÃO: Se sua instância foi criada pelo script awscode do Prof. Santiago ela pode ser acessível pela"
-echo " chave privada (.pem): \033[1mhttps://cutt.ly/chaveVM\033[0m"
+echo " chave privada (.pem): \033[1mhttps://tinyurl.com/chaveVM\033[0m"
 echo ""
 echo "Considere usar esse comando para copiar a chave para seu ambiente local:"
 echo ""
-echo "CMD (Prompt de Comandos): \033[31mcurl -L -s -o chaveVM.pem https://cutt.ly/chaveVM\033[0m"
+echo "CMD (Prompt de Comandos): \033[31mcurl -L -s -o chaveVM.pem https://tinyurl.com/chaveVM\033[0m"
 echo ""
 echo "Acessando a VM: \033[31mssh -i chaveVM.pem admin@IP_DO_SEU_SERVIDOR\033[0m"
 echo ""
