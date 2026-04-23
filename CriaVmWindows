@@ -1,0 +1,158 @@
+# CALL: wget --no-check-certificate -qO- https://tinyurl.com/CriaVmWindows |sh
+
+# Tipo da Instancia (Tamanho)
+# INSTANCE_TIPO="m7i-flex.large"
+INSTANCE_TIPO="t3.medium"
+
+# Nome da Chave .pem para acesso
+SERVER_NAME="WinServer"
+KEY_NAME="chaveVM"
+
+KEY_PUB="chaveVM.pub"
+KEY_PUB_URL="https://tinyurl.com/chaveVMp"
+
+KEY_PRIV="chaveVM.pem"
+KEY_PRIV_URL="https://tinyurl.com/chaveVM"
+
+# Verifica se a chave já existe
+existing_keys=$(aws ec2 describe-key-pairs --query "KeyPairs[?KeyName=='$KEY_NAME'].KeyName" --output text)
+
+if [ -z "$existing_keys" ]; then
+    echo "Chave $KEY_NAME não encontrada. Importando..."
+    wget --no-check-certificate -q -O $KEY_PUB $KEY_PUB_URL
+
+    # Executa o comando de importação
+    aws ec2 import-key-pair --key-name "$KEY_NAME" --public-key-material "fileb://$KEY_PUB"
+
+    # Verifica se o comando foi bem sucedido
+    if [ $? -eq 0 ]; then
+        echo "Chave $KEY_NAME importada com sucesso!"
+        rm -f $KEY_PUB
+        wget --no-check-certificate -qO- https://tinyurl.com/CriaVmWindows |sh
+    else
+        echo "Erro ao importar a chave $KEY_NAME" >&2
+        exit 1
+    fi
+
+else
+
+        # --- Revisão das instâncias criadas
+        echo "Verificando instâncias existentes na conta..."
+        # Busca IDs, Nomes e Tipos de instâncias que não foram terminadas
+        instances=$(aws ec2 describe-instances \
+            --filters "Name=instance-state-name,Values=pending,running,shutting-down,stopping,stopped" \
+            --query "Reservations[*].Instances[*].[InstanceId,Tags[?Key=='Name'].Value | [0],InstanceType]" \
+            --output text)
+
+        if [ -n "$instances" ]; then
+            echo ""
+            echo "Instâncias encontradas:"
+            while read -r ins_id ins_name ins_type; do
+                # Se a instância não tiver nome, define como 'Sem Nome'
+                [ -z "$ins_name" ] && ins_name="Sem Nome"
+
+                echo "--------------------------------------------------"
+                echo "Instância: $ins_name | Tipo: $ins_type | ID: $ins_id"
+                read -p "Deseja remover esta instância? (y/n): " confirm < /dev/tty
+
+                if [[ "$confirm" == "y" || "$confirm" == "Y" ]]; then
+                    echo "Removendo $ins_id ($ins_name)..."
+                    aws ec2 terminate-instances --instance-ids "$ins_id" > /dev/null
+                    echo "Comando de terminação enviado."
+                else
+                    echo "Mantendo instância $ins_name."
+                fi
+            done <<< "$instances"
+        else
+            echo "Nenhuma instância ativa encontrada para revisão."
+        fi
+                echo "--------------------------------------------------"
+                echo ""
+
+
+    # Download da .pem
+    wget --no-check-certificate -q -O $KEY_PRIV $KEY_PRIV_URL
+
+    # Lendo a VPC Default (Ja existente)
+    VPC=$(aws ec2 describe-vpcs --filters "Name=isDefault,Values=true" --query "Vpcs[0].VpcId" --output text)
+
+     # Criar o Security Group
+    aws ec2 create-security-group --group-name SG-ServerWindows --description "SG Servidor Windows" --vpc-id $VPC > /dev/null 2>&1
+
+    # Lendo o GroupId para atribuir as portas de entrada
+    SG_ID=$(aws ec2 describe-security-groups --filters "Name=group-name,Values=SG-ServerWindows" "Name=vpc-id,Values=$VPC" --query "SecurityGroups[0].GroupId" --output text)
+
+    # Criando a regra de acesso para todas as porta TCP
+    aws ec2 authorize-security-group-ingress --group-id $SG_ID --protocol tcp --port 0-65535 --cidr 0.0.0.0/0 > /dev/null 2>&1
+
+    # Imagem do Windows Windows Server 2022 - Core + Desktop Experience
+    #AMI_ID="ami-0604d81f2fd264c7b"
+
+    # Obtendo a imagem mais recente da AWS para Windows 2022 - Core 
+    AMI_ID=$(aws ec2 describe-images                                                    \
+                --owners amazon                                                         \
+                --filters "Name=name,Values=*Windows_Server-2022-English-Full-Base*"    \
+                          "Name=architecture,Values=x86_64"                             \
+                          "Name=virtualization-type,Values=hvm"                         \
+                --query 'Images | sort_by(@, &CreationDate)[-1].ImageId'                \
+                --output text)
+
+
+    # 1. Lançar a instância e capturar o Instance ID
+    launch_output=$(aws ec2 run-instances \
+                --image-id $AMI_ID \
+                --count 1 \
+                --instance-type $INSTANCE_TIPO \
+                --key-name $KEY_NAME \
+                --security-group-ids $SG_ID \
+                --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=WindowsServer}]')
+
+     # 2. Extrair o Instance ID
+        instance_id=$(echo "$launch_output" | jq -r '.Instances[0].InstanceId')
+        echo "Máquina Windows 2022 Criada: Instance ID: $instance_id"
+
+     # 3. Aguardar a instância estar no estado 'running'
+        aws ec2 wait instance-running --instance-ids "$instance_id"
+
+     # 5. Aguardar a senha ficar disponível (pode levar 2 minutos)
+        echo "Aguardando por 2 minutos a senha ficar disponível..."
+        sleep 120  # Aguarda 2 minutos inicialmente
+
+     # 6. Tentar obter a senha (pode exigir várias tentativas)
+        max_attempts=5
+        attempt=1
+        password_data=""
+
+        while [[ $attempt -le $max_attempts && -z "$password_data" ]]; do
+            password_data=$(aws ec2 get-password-data \
+                --instance-id "$instance_id" \
+                --priv-launch-key "$KEY_PRIV" \
+                --query 'PasswordData' \
+                --output text 2>/dev/null)
+
+        if [ -z "$password_data" ]; then
+                echo "Tentativa $attempt: Senha ainda não disponível..."
+                echo "Aguardo mais 30 segundos..."
+                sleep 30
+                ((attempt++))
+        fi
+        done
+
+	 # 7. Exibir o resultado
+        if [ -n "$password_data" ]; then
+                public_ip=$(aws ec2 describe-instances \
+                         --instance-ids "$instance_id" \
+                         --query 'Reservations[0].Instances[0].PublicIpAddress' --output text)
+                echo "--------------------------------------------------"
+                echo "Senha do Administrador: $password_data"
+                echo "--------------------------------------------------"
+                echo "IP: $public_ip"
+        else
+                echo "ERRO: Não foi possível obter a senha após $max_attempts tentativas"
+                echo "Verifique manualmente com:"
+                echo "aws ec2 get-password-data --instance-id $instance_id --priv-launch-key $KEY_PRIV"
+        fi
+
+     # Removendo o arquivo chave
+     rm -f $KEY_PRIV
+fi
