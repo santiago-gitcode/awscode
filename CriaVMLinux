@@ -1,7 +1,11 @@
 # CALL: wget --no-check-certificate -qO- https://tinyurl.com/CriaVmLinux |sh
 
+# Tipo da Instancia (Tamanho)
+# INSTANCE_TIPO="m7i-flex.large"
+INSTANCE_TIPO="t3.medium"
+
 # Nome da Chave .pem para acesso
-SERVER_NAME="LinuxP1"
+SERVER_NAME="LinuxServer"
 KEY_NAME="chaveVM"
 
 KEY_PUB="chaveVM.pub"
@@ -83,13 +87,13 @@ else
 
 
     # Imagem do Debian 13 (us-east-1)
-    AMI_ID="ami-0f9c27b471bdcd702"
+    AMI_ID="ami-0f9c27b471bdcd702"   
 
     # 1. Lançar a instância e capturar o Instance ID
     launch_output=$(aws ec2 run-instances \
                 --image-id $AMI_ID \
                 --count 1 \
-                --instance-type m7i-flex.large \
+                --instance-type $INSTANCE_TIPO \
                 --key-name $KEY_NAME \
                 --security-group-ids $SG_ID \
                 --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=\"$SERVER_NAME\"}]")
