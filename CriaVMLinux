@@ -1,11 +1,11 @@
 # CALL: wget --no-check-certificate -qO- https://tinyurl.com/CriaVmLinux |sh
 
 # Tipo da Instancia (Tamanho)
-# INSTANCE_TIPO="m7i-flex.large"
-INSTANCE_TIPO="t3.medium"
+INSTANCE_TIPO="m7i-flex.large"
+# INSTANCE_TIPO="t3.medium"
 
 # Nome da Chave .pem para acesso
-SERVER_NAME="LinuxServer"
+SERVER_NAME="LinuxDocker"
 KEY_NAME="chaveVM"
 
 KEY_PUB="chaveVM.pub"
