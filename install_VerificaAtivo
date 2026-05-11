@@ -1,0 +1,48 @@
+# call: wget -qO- https://tinyurl.com/segfatec/awscode/install_verificaAtivo |sudo sh
+#
+# Gerando o script
+echo '#!/bin/bash' > /usr/local/bin/check-ativo.sh
+echo '' >> /usr/local/bin/check-ativo.sh
+echo '# Tenta gerar o token do IMDSv2 (válido por 60 segundos para esta checagem)' >> /usr/local/bin/check-ativo.sh
+echo 'TOKEN=$(curl -s -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 60")' >> /usr/local/bin/check-ativo.sh
+echo '' >> /usr/local/bin/check-ativo.sh
+echo '# Verifica se conseguiu gerar o token (se o serviço de metadados está acessível)' >> /usr/local/bin/check-ativo.sh
+echo '' >> /usr/local/bin/check-ativo.sh
+echo 'if [ -z "$TOKEN" ]; then' >> /usr/local/bin/check-ativo.sh
+echo '    echo "Erro: Não foi possível acessar o serviço de metadados. Desligando..."' >> /usr/local/bin/check-ativo.sh
+echo '    sudo shutdown -h now' >> /usr/local/bin/check-ativo.sh
+echo '    exit 1' >> /usr/local/bin/check-ativo.sh
+echo 'fi' >> /usr/local/bin/check-ativo.sh
+echo '' >> /usr/local/bin/check-ativo.sh
+echo '# Tenta ler o valor da tag "Ativo"' >> /usr/local/bin/check-ativo.sh
+echo '# O parâmetro -s silencia o progresso e o -f retorna erro se o HTTP status for 4xx/5xx' >> /usr/local/bin/check-ativo.sh
+echo 'VALOR_ATIVO=$(curl -s -f -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/tags/instance/Ativo)' >> /usr/local/bin/check-ativo.sh
+echo '' >> /usr/local/bin/check-ativo.sh
+echo '# Se o comando falhou (tag não existe ou IMT desativado) ou o valor não é "SIM"' >> /usr/local/bin/check-ativo.sh
+echo '' >> /usr/local/bin/check-ativo.sh
+echo 'if [ $? -ne 0 ] || [ "$VALOR_ATIVO" != "SIM" ]; then' >> /usr/local/bin/check-ativo.sh
+echo '    echo "Condição de segurança não atendida (Tag: $VALOR_ATIVO). Desligando a instância..."' >> /usr/local/bin/check-ativo.sh
+echo '    sudo shutdown -h now' >> /usr/local/bin/check-ativo.sh
+echo 'fi' >> /usr/local/bin/check-ativo.sh
+
+# Gerando o service [/etc/systemd/system/verificar-ativo.service]
+echo '[Unit]' > /etc/systemd/system/verificar-ativo.service
+echo 'Description=Verifica Tag Ativo na AWS antes de liberar uso' >>/etc/systemd/system/verificar-ativo.service
+echo 'After=network-online.target' >>/etc/systemd/system/verificar-ativo.service
+echo 'Wants=network-online.target' >>/etc/systemd/system/verificar-ativo.service
+echo '' >>/etc/systemd/system/verificar-ativo.service
+echo '[Service]' >>/etc/systemd/system/verificar-ativo.service
+echo 'Type=oneshot' >>/etc/systemd/system/verificar-ativo.service
+echo 'ExecStart=/usr/local/bin/check-ativo.sh' >>/etc/systemd/system/verificar-ativo.service
+echo 'RemainAfterExit=yes' >>/etc/systemd/system/verificar-ativo.service
+echo '' >>/etc/systemd/system/verificar-ativo.service
+echo '[Install]' >>/etc/systemd/system/verificar-ativo.service
+echo 'WantedBy=multi-user.target' >>/etc/systemd/system/verificar-ativo.service
+
+#Ativando a premissao de execução
+chmod +x /usr/local/bin/check-ativo.sh
+
+systemctl daemon-reload
+systemctl enable verificar-ativo.service
+systemctl start verificar-ativo.service
+journalctl -u verificar-ativo.service
