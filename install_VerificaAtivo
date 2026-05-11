@@ -1,4 +1,4 @@
-# call: wget -qO- https://tinyurl.com/segfatec/awscode/install_verificaAtivo |sudo sh
+# call: wget -qO- https://tinyurl.com/verificaAtivoLinux |sudo sh
 #
 # Gerando o script
 echo '#!/bin/bash' > /usr/local/bin/check-ativo.sh
