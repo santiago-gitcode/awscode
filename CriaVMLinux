@@ -69,7 +69,6 @@ else
                 echo "--------------------------------------------------"
                 echo ""
 
-
     # Download da .pem
     wget --no-check-certificate -q -O $KEY_PRIV $KEY_PRIV_URL
 
@@ -84,7 +83,6 @@ else
 
     # Criando a regra de acesso para todas as porta TCP
     aws ec2 authorize-security-group-ingress --group-id $SG_ID --protocol tcp --port 0-65535 --cidr 0.0.0.0/0 > /dev/null 2>&1
-
 
     # Imagem do Debian 13 (us-east-1)
     AMI_ID="ami-0f9c27b471bdcd702"   
@@ -116,7 +114,6 @@ else
         public_ip=$(aws ec2 describe-instances \
                         --instance-ids "$instance_id" \
                         --query 'Reservations[0].Instances[0].PublicIpAddress' --output text)
-
 
                 echo "--------------------------------------------------"
                 echo " "
