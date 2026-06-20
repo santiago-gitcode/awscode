@@ -1,6 +1,6 @@
 # juntaPDF
 # Call: powershell -ExecutionPolicy Bypass -File .\juntaPDF.ps1
-# Remote: Invoke-WebRequest -Uri "http://192.168.56.1/scripts/juntarPDF.ps1" -OutFile "juntarPDF.ps1"; powershell -ExecutionPolicy Bypass -File ".\juntarPDF.ps1"
+# Remote: Invoke-WebRequest -Uri "https://raw.githubusercontent.com/santiago-gitcode/awscode/refs/heads/main/pshell/juntaPDF.ps1" -OutFile "juntarPDF.ps1"; powershell -ExecutionPolicy Bypass -File ".\juntarPDF.ps1"
 
 #
 # Instalação do Módulo PSWritePDF. Essa ação de instalação somente é realizada uma vez.
