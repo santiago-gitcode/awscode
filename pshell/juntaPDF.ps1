@@ -1,4 +1,4 @@
-# juntaPDF
+# Acesse o diretório onde está salvo a pasta pfds para executar essa chamada.
 # CALL: Invoke-WebRequest -Uri "https://raw.githubusercontent.com/santiago-gitcode/awscode/refs/heads/main/pshell/juntaPDF.ps1" -OutFile "juntarPDF.ps1"; powershell -ExecutionPolicy Bypass -File ".\juntarPDF.ps1"
 # CALL LOCAL: powershell -ExecutionPolicy Bypass -File .\juntaPDF.ps1
 
