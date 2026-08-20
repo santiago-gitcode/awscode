@@ -5,7 +5,7 @@
 INSTANCE_TIPO="t3.medium"
 
 # Nome da Chave .pem para acesso
-SERVER_NAME="WinServer"
+SERVER_NAME="ServerAD"
 KEY_NAME="chaveVM"
 
 KEY_PUB="chaveVM.pub"
