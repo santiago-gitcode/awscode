@@ -1,23 +1,24 @@
-#!/bin/bash
+#!/bin/sh
 # CALL: wget -qO- https://tinyurl.com/ativavm | sh
 
 echo "Buscando instâncias EC2 na sua conta AWS..."
 
-# 1. Busca IDs, Estados e Nomes das instâncias (ignorando as 'terminated')
-# Usamos mapfile para ler a saída em forma de tabela separada por tabulação
-mapfile -t instances < <(aws ec2 describe-instances \
+# Cria arquivos temporários para armazenar dados sem depender de arrays (que não existem no 'sh')
+TMP_FILE=$(mktemp)
+MAP_FILE=$(mktemp)
+
+# Busca os dados e salva no arquivo temporário
+aws ec2 describe-instances \
     --filters "Name=instance-state-name,Values=pending,running,shutting-down,stopping,stopped" \
     --query "Reservations[*].Instances[*].[InstanceId, State.Name, Tags[?Key=='Name'].Value | [0]]" \
-    --output text)
+    --output text > "$TMP_FILE"
 
-if [ ${#instances[@]} -eq 0 ]; then
+# Verifica se o arquivo tem conteúdo
+if [ ! -s "$TMP_FILE" ]; then
     echo "Nenhuma instância encontrada."
+    rm -f "$TMP_FILE" "$MAP_FILE"
     exit 0
 fi
-
-# Arrays para mapear as opções do usuário
-declare -a inst_ids
-declare -a inst_names
 
 echo ""
 echo "------------------------------------------------------------------"
@@ -25,70 +26,65 @@ printf "%-5s | %-20s | %-12s | %-15s\n" "Item" "Instance ID" "Status" "Nome"
 echo "------------------------------------------------------------------"
 
 count=1
-for line in "${instances[@]}"; do
-    # Extrai as colunas considerando que a AWS separa o text output por TABs
-    id=$(echo "$line" | awk -F'\t' '{print $1}')
-    state=$(echo "$line" | awk -F'\t' '{print $2}')
-    name=$(echo "$line" | awk -F'\t' '{print $3}')
-    
-    # Tratamento caso a instância não tenha tag de nome ou retorne "None"
-    if [ -z "$name" ] || [ "$name" == "None" ]; then
+# Lê o arquivo temporário linha por linha. O read padrão lida muito bem com os espaços/tabs.
+while read -r id state name; do
+    if [ -z "$name" ] || [ "$name" = "None" ]; then
         name="<Sem Nome>"
     fi
-
-    inst_ids[$count]=$id
-    inst_names[$count]=$name
-
-    # Imprime a linha formatada para o usuário escolher
+    
+    # Imprime na tela
     printf "%-5s | %-20s | %-12s | %-15s\n" "[$count]" "$id" "$state" "$name"
+    
+    # Salva um mapeamento do tipo "1 i-01234abcd" no segundo arquivo temporário
+    echo "$count $id" >> "$MAP_FILE"
+    
     count=$((count+1))
-done
+done < "$TMP_FILE"
+
 echo "------------------------------------------------------------------"
 echo ""
 
-# 2. Pergunta ao usuário
 echo "Para economizar créditos do AWS Academy, vamos desligar o que não for usado."
-read -p "Quais instâncias devem FICAR LIGADAS? (Digite os números separados por espaço, ex: 1 3): " choices < /dev/tty
+echo "(DICA: Se você apenas apertar ENTER, TODAS as instâncias serão desligadas)"
+# Usamos printf + read em vez de 'read -p', pois '-p' também não existe no 'sh' puro
+printf "Quais instâncias devem FICAR LIGADAS? (ex: 1 3): "
+read choices < /dev/tty
 
-# Arrays para separar o que fica ligado e o que será desligado
-keep_ids=()
-stop_ids=()
+STOP_IDS=""
 
-# 3. Mapeia os números digitados para os IDs reais das instâncias
-for c in $choices; do
-    if [ -n "${inst_ids[$c]}" ]; then
-        keep_ids+=("${inst_ids[$c]}")
-    fi
-done
-
-# 4. Compara com todas as instâncias: quem não estiver no 'keep_ids', vai para o 'stop_ids'
-for i in "${!inst_ids[@]}"; do
-    id="${inst_ids[$i]}"
+# Compara as escolhas do usuário com o arquivo de mapeamento
+while read -r num id; do
     manter="nao"
     
-    for kid in "${keep_ids[@]}"; do
-        if [ "$kid" == "$id" ]; then
+    # Avalia os números digitados
+    for choice in $choices; do
+        if [ "$choice" = "$num" ]; then
             manter="sim"
             break
         fi
     done
     
-    if [ "$manter" == "nao" ]; then
-        stop_ids+=("$id")
+    # Se não foi escolhida para manter, adicionamos à lista de parada (separada por espaço)
+    if [ "$manter" = "nao" ]; then
+        STOP_IDS="$STOP_IDS $id"
     fi
-done
+done < "$MAP_FILE"
 
-# 5. Executa a ação de desligamento
+# Limpa a casa apagando os arquivos temporários
+rm -f "$TMP_FILE" "$MAP_FILE"
+
 echo ""
-if [ ${#stop_ids[@]} -gt 0 ]; then
+if [ -n "$STOP_IDS" ]; then
     echo "Desligando as instâncias não selecionadas..."
-    # Executa o stop-instances passando todos os IDs a serem desligados de uma vez
+    
+    # A variável $STOP_IDS sem aspas aqui é proposital, ela passará os IDs separados
     aws ec2 stop-instances \
-        --instance-ids "${stop_ids[@]}" \
+        --instance-ids $STOP_IDS \
         --query "StoppingInstances[*].{ID:InstanceId,Atual:CurrentState.Name,Anterior:PreviousState.Name}" \
         --output table
+        
     echo "Feito! As instâncias foram desligadas com sucesso."
 else
-    echo "Todas as instâncias foram selecionadas para continuar ligadas (ou a seleção estava vazia/inválida)."
+    echo "Todas as instâncias foram selecionadas para continuarem ligadas."
     echo "Nenhuma ação de desligamento foi realizada."
 fi
