@@ -1,0 +1,94 @@
+#!/bin/bash
+# CALL: wget -qO- https://tinyurl.com/ativavm | sh
+
+echo "Buscando instâncias EC2 na sua conta AWS..."
+
+# 1. Busca IDs, Estados e Nomes das instâncias (ignorando as 'terminated')
+# Usamos mapfile para ler a saída em forma de tabela separada por tabulação
+mapfile -t instances < <(aws ec2 describe-instances \
+    --filters "Name=instance-state-name,Values=pending,running,shutting-down,stopping,stopped" \
+    --query "Reservations[*].Instances[*].[InstanceId, State.Name, Tags[?Key=='Name'].Value | [0]]" \
+    --output text)
+
+if [ ${#instances[@]} -eq 0 ]; then
+    echo "Nenhuma instância encontrada."
+    exit 0
+fi
+
+# Arrays para mapear as opções do usuário
+declare -a inst_ids
+declare -a inst_names
+
+echo ""
+echo "------------------------------------------------------------------"
+printf "%-5s | %-20s | %-12s | %-15s\n" "Item" "Instance ID" "Status" "Nome"
+echo "------------------------------------------------------------------"
+
+count=1
+for line in "${instances[@]}"; do
+    # Extrai as colunas considerando que a AWS separa o text output por TABs
+    id=$(echo "$line" | awk -F'\t' '{print $1}')
+    state=$(echo "$line" | awk -F'\t' '{print $2}')
+    name=$(echo "$line" | awk -F'\t' '{print $3}')
+    
+    # Tratamento caso a instância não tenha tag de nome ou retorne "None"
+    if [ -z "$name" ] || [ "$name" == "None" ]; then
+        name="<Sem Nome>"
+    fi
+
+    inst_ids[$count]=$id
+    inst_names[$count]=$name
+
+    # Imprime a linha formatada para o usuário escolher
+    printf "%-5s | %-20s | %-12s | %-15s\n" "[$count]" "$id" "$state" "$name"
+    count=$((count+1))
+done
+echo "------------------------------------------------------------------"
+echo ""
+
+# 2. Pergunta ao usuário
+echo "Para economizar créditos do AWS Academy, vamos desligar o que não for usado."
+read -p "Quais instâncias devem FICAR LIGADAS? (Digite os números separados por espaço, ex: 1 3): " choices < /dev/tty
+
+# Arrays para separar o que fica ligado e o que será desligado
+keep_ids=()
+stop_ids=()
+
+# 3. Mapeia os números digitados para os IDs reais das instâncias
+for c in $choices; do
+    if [ -n "${inst_ids[$c]}" ]; then
+        keep_ids+=("${inst_ids[$c]}")
+    fi
+done
+
+# 4. Compara com todas as instâncias: quem não estiver no 'keep_ids', vai para o 'stop_ids'
+for i in "${!inst_ids[@]}"; do
+    id="${inst_ids[$i]}"
+    manter="nao"
+    
+    for kid in "${keep_ids[@]}"; do
+        if [ "$kid" == "$id" ]; then
+            manter="sim"
+            break
+        fi
+    done
+    
+    if [ "$manter" == "nao" ]; then
+        stop_ids+=("$id")
+    fi
+done
+
+# 5. Executa a ação de desligamento
+echo ""
+if [ ${#stop_ids[@]} -gt 0 ]; then
+    echo "Desligando as instâncias não selecionadas..."
+    # Executa o stop-instances passando todos os IDs a serem desligados de uma vez
+    aws ec2 stop-instances \
+        --instance-ids "${stop_ids[@]}" \
+        --query "StoppingInstances[*].{ID:InstanceId,Atual:CurrentState.Name,Anterior:PreviousState.Name}" \
+        --output table
+    echo "Feito! As instâncias foram desligadas com sucesso."
+else
+    echo "Todas as instâncias foram selecionadas para continuar ligadas (ou a seleção estava vazia/inválida)."
+    echo "Nenhuma ação de desligamento foi realizada."
+fi
