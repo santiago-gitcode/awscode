@@ -3,7 +3,7 @@
 
 echo "Buscando instâncias EC2 na sua conta AWS..."
 
-# Cria arquivos temporários para armazenar dados sem depender de arrays (que não existem no 'sh')
+# Arquivos temporários
 TMP_FILE=$(mktemp)
 MAP_FILE=$(mktemp)
 
@@ -26,7 +26,7 @@ printf "%-5s | %-20s | %-12s | %-15s\n" "Item" "Instance ID" "Status" "Nome"
 echo "------------------------------------------------------------------"
 
 count=1
-# Lê o arquivo temporário linha por linha. O read padrão lida muito bem com os espaços/tabs.
+# Lê o arquivo temporário
 while read -r id state name; do
     if [ -z "$name" ] || [ "$name" = "None" ]; then
         name="<Sem Nome>"
@@ -35,8 +35,8 @@ while read -r id state name; do
     # Imprime na tela
     printf "%-5s | %-20s | %-12s | %-15s\n" "[$count]" "$id" "$state" "$name"
     
-    # Salva um mapeamento do tipo "1 i-01234abcd" no segundo arquivo temporário
-    echo "$count $id" >> "$MAP_FILE"
+    # Salva mapeamento: Número, ID, e Status Atual
+    echo "$count $id $state" >> "$MAP_FILE"
     
     count=$((count+1))
 done < "$TMP_FILE"
@@ -44,20 +44,22 @@ done < "$TMP_FILE"
 echo "------------------------------------------------------------------"
 echo ""
 
-echo "Para economizar créditos do AWS Academy, vamos desligar o que não for usado."
-echo "(DICA: Se você apenas apertar ENTER, TODAS as instâncias serão desligadas)"
+echo "Gerenciador do AWS Academy:"
+echo "- As instâncias que você escolher serão LIGADAS (ou mantidas ligadas)."
+echo "- As instâncias que você NÃO escolher serão DESLIGADAS."
+echo "(DICA: Se apenas apertar ENTER, TODAS serão desligadas)"
 echo ""
-# Usamos printf + read em vez de 'read -p', pois '-p' também não existe no 'sh' puro
-printf "Quais instâncias devem FICAR LIGADAS? (ex: 1 3): "
+printf "Quais instâncias devem estar LIGADAS? (ex: 1 3): "
 read choices < /dev/tty
 
+START_IDS=""
 STOP_IDS=""
 
-# Compara as escolhas do usuário com o arquivo de mapeamento
-while read -r num id; do
+# Lê o mapeamento para decidir quem liga e quem desliga
+while read -r num id state; do
     manter="nao"
     
-    # Avalia os números digitados
+    # Avalia se a instância foi selecionada pelo usuário
     for choice in $choices; do
         if [ "$choice" = "$num" ]; then
             manter="sim"
@@ -65,29 +67,49 @@ while read -r num id; do
         fi
     done
     
-    # Se não foi escolhida para manter, adicionamos à lista de parada (separada por espaço)
-    if [ "$manter" = "nao" ]; then
-        STOP_IDS="$STOP_IDS $id"
+    # Lógica de ação baseada na escolha e no status atual
+    if [ "$manter" = "sim" ]; then
+        # Se escolheu manter ligada, mas ela está 'stopped', coloca na fila de LIGAR
+        if [ "$state" = "stopped" ]; then
+            START_IDS="$START_IDS $id"
+        fi
+    else
+        # Se NÃO escolheu manter ligada, e ela está 'running' ou 'pending', coloca na fila de DESLIGAR
+        if [ "$state" = "running" ] || [ "$state" = "pending" ]; then
+            STOP_IDS="$STOP_IDS $id"
+        fi
     fi
 done < "$MAP_FILE"
 
-# Limpa a casa apagando os arquivos temporários
+# Limpa os arquivos temporários
 rm -f "$TMP_FILE" "$MAP_FILE"
 
 echo ""
+
+# Executa as ações de LIGAR
+if [ -n "$START_IDS" ]; then
+    echo "Iniciando instâncias selecionadas que estavam desligadas..."
+    aws ec2 start-instances \
+        --instance-ids $START_IDS \
+        --query "StartingInstances[*].{ID:InstanceId,Atual:CurrentState.Name,Anterior:PreviousState.Name}" \
+        --output table
+fi
+
+# Executa as ações de DESLIGAR
 if [ -n "$STOP_IDS" ]; then
     echo "Desligando as instâncias não selecionadas..."
-    
-    # A variável $STOP_IDS sem aspas aqui é proposital, ela passará os IDs separados
     aws ec2 stop-instances \
         --instance-ids $STOP_IDS \
         --query "StoppingInstances[*].{ID:InstanceId,Atual:CurrentState.Name,Anterior:PreviousState.Name}" \
         --output table
-        
-    echo "Feito! As instâncias foram desligadas com sucesso."
+fi
+
+# Mensagem final se nada precisou ser feito
+if [ -z "$START_IDS" ] && [ -z "$STOP_IDS" ]; then
+    echo "Todas as instâncias já estão no estado desejado. Nenhuma ação foi necessária."
 else
-    echo "Todas as instâncias foram selecionadas para continuarem ligadas."
-    echo "Nenhuma ação de desligamento foi realizada."
+    echo ""
+    echo "Operação concluída com sucesso!"
 fi
 
 # Limpando a tela e chamando o exibeIP
