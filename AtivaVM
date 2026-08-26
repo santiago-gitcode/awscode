@@ -111,7 +111,3 @@ else
     echo ""
     echo "Operação concluída com sucesso!"
 fi
-
-# Limpando a tela e chamando o exibeIP
-clear
-wget -qO- https://tinyurl.com/exibeIP |sh
