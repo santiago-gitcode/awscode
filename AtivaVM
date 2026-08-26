@@ -46,6 +46,7 @@ echo ""
 
 echo "Para economizar créditos do AWS Academy, vamos desligar o que não for usado."
 echo "(DICA: Se você apenas apertar ENTER, TODAS as instâncias serão desligadas)"
+echo ""
 # Usamos printf + read em vez de 'read -p', pois '-p' também não existe no 'sh' puro
 printf "Quais instâncias devem FICAR LIGADAS? (ex: 1 3): "
 read choices < /dev/tty
@@ -88,3 +89,7 @@ else
     echo "Todas as instâncias foram selecionadas para continuarem ligadas."
     echo "Nenhuma ação de desligamento foi realizada."
 fi
+
+# Limpando a tela e chamando o exibeIP
+clear
+wget -qO- https://tinyurl.com/exibeIP |sh
