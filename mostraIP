@@ -1,4 +1,4 @@
-# CALL: wget -k -qO- https://tinyurl.com/exibeIP |sh
+# CALL: wget -qO- https://tinyurl.com/exibeIP |sh
 
 
 # Exibindo as informações da conta
