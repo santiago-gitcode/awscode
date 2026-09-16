@@ -1,5 +1,5 @@
 #!/bin/sh
-# CALL: wget -qO- https://tinyurl.com/rclone | sh
+# CALL: wget -qO- https://tinyurl.com/s3rclone | sh
 
 # ====================================================================
 # CONFIGURAÇÕES
