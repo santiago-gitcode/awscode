@@ -1,0 +1,77 @@
+#!/bin/sh
+# CALL: wget -qO- https://tinyurl.com/rclone | sh
+
+# ====================================================================
+# CONFIGURAÇÕES
+# ====================================================================
+# Caminho do arquivo de configuração do rclone no seu Windows
+RCLONE_CONF_PATH='C:\rclone\rclone.conf'
+
+# Caminho do arquivo de credenciais da AWS no Learning Labs
+ARQUIVO="$HOME/.aws/credentials"
+
+# Mapeamento de E-mails para Upstreams.
+# Para adicionar novos usuários no futuro, basta copiar uma linha e alterar o e-mail/disco.
+obter_upstream() {
+    case "$1" in
+        "fatec.2017sp@gmail.com") echo "aws_s3_01" ;;
+        "fatec2017.sp@gmail.com") echo "aws_s3_02" ;;
+        # Adicione novos usuários acima desta linha
+        *) echo "" ;; # Retorna vazio se o e-mail não estiver na lista
+    esac
+}
+# ====================================================================
+
+echo "===================================================================="
+echo " Analisando ambiente e gerando script do rclone..."
+echo "===================================================================="
+echo ""
+
+# 1. Verifica se a variável de ambiente existe no terminal
+if [ -z "$VOC_EMAIL_ID" ]; then
+    echo "Erro: A variável VOC_EMAIL_ID não está definida neste terminal."
+    echo "Operação cancelada."
+    exit 1
+fi
+
+# 2. Busca qual é o disco mapeado para esse e-mail
+SELECTED_UPSTREAM=$(obter_upstream "$VOC_EMAIL_ID")
+
+# 3. Verifica se o e-mail possui um upstream configurado
+if [ -z "$SELECTED_UPSTREAM" ]; then
+    echo "Erro: O usuário '$VOC_EMAIL_ID' não tem o upstream configurado no rclone."
+    exit 1
+fi
+
+echo "Usuário detectado: $VOC_EMAIL_ID"
+echo "Upstream selecionado: $SELECTED_UPSTREAM"
+echo "Extraindo tokens temporários..."
+echo ""
+
+# 4. Valida e extrai as credenciais
+if [ ! -f "$ARQUIVO" ]; then
+    echo "Erro: Arquivo '$ARQUIVO' não encontrado."
+    exit 1
+fi
+
+AK=$(grep -E "^aws_access_key_id" "$ARQUIVO" | cut -d '=' -f 2 | tr -d ' ' | tr -d '\r')
+SK=$(grep -E "^aws_secret_access_key" "$ARQUIVO" | cut -d '=' -f 2 | tr -d ' ' | tr -d '\r')
+ST=$(grep -E "^aws_session_token" "$ARQUIVO" | cut -d '=' -f 2 | tr -d ' ' | tr -d '\r')
+
+if [ -z "$AK" ] || [ -z "$SK" ] || [ -z "$ST" ]; then
+    echo "Erro: Não foi possível extrair todas as 3 chaves do arquivo."
+    exit 1
+fi
+
+# 5. Gera o comando PowerShell (aqui usamos o printf para blindar as barras invertidas)
+CMD="\$f='$RCLONE_CONF_PATH'; \$t=Get-Content \$f -Raw; \$t=\$t -replace '(?s)(\x5B$SELECTED_UPSTREAM\x5D(?:[^\x5B]*?)\baccess_key_id\s*=\s*)[^\r\n]*', '\${1}$AK' -replace '(?s)(\x5B$SELECTED_UPSTREAM\x5D(?:[^\x5B]*?)\bsecret_access_key\s*=\s*)[^\r\n]*', '\${1}$SK' -replace '(?s)(\x5B$SELECTED_UPSTREAM\x5D(?:[^\x5B]*?)\bsession_token\s*=\s*)[^\r\n]*', '\${1}$ST'; Set-Content \$f -Value \$t; Write-Host ''; Write-Host '>> Credenciais atualizadas com sucesso no rclone.conf para $SELECTED_UPSTREAM ($VOC_EMAIL_ID)' -ForegroundColor Green"
+
+echo "===================================================================="
+echo " Abra o PowerShell no seu Windows e COLOQUE o código abaixo:"
+echo "===================================================================="
+echo ""
+
+# Imprime o comando em PowerShell
+printf "%s\n" "$CMD"
+
+echo ""
