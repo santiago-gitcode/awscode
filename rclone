@@ -54,9 +54,9 @@ if [ ! -f "$ARQUIVO" ]; then
     exit 1
 fi
 
-AK=$(grep -E "^aws_access_key_id" "$ARQUIVO" | cut -d '=' -f 2 | tr -d ' ' | tr -d '\r')
-SK=$(grep -E "^aws_secret_access_key" "$ARQUIVO" | cut -d '=' -f 2 | tr -d ' ' | tr -d '\r')
-ST=$(grep -E "^aws_session_token" "$ARQUIVO" | cut -d '=' -f 2 | tr -d ' ' | tr -d '\r')
+AK=$(grep -E "^aws_access_key_id" "$ARQUIVO" | cut -d '=' -f 2- | tr -d ' ' | tr -d '\r')
+SK=$(grep -E "^aws_secret_access_key" "$ARQUIVO" | cut -d '=' -f 2- | tr -d ' ' | tr -d '\r')
+ST=$(grep -E "^aws_session_token" "$ARQUIVO" | cut -d '=' -f 2- | tr -d ' ' | tr -d '\r')
 
 if [ -z "$AK" ] || [ -z "$SK" ] || [ -z "$ST" ]; then
     echo "Erro: Não foi possível extrair todas as 3 chaves do arquivo."
