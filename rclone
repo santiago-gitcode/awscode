@@ -5,7 +5,8 @@
 # CONFIGURAÇÕES
 # ====================================================================
 # Caminho do arquivo de configuração do rclone no seu Windows
-RCLONE_CONF_PATH='C:\Users\manager\AppData\Roaming\rclone\rclone.conf'
+#RCLONE_CONF_PATH='C:\Users\manager\AppData\Roaming\rclone\rclone.conf'
+RCLONE_CONF_PATH='c:\RClone\rclone.conf'
 
 # Caminho do arquivo de credenciais da AWS no Learning Labs
 ARQUIVO="$HOME/.aws/credentials"
