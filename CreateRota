@@ -88,6 +88,7 @@ if [ "$ROUTE_TABLE_ID" = "None" ] || [ -z "$ROUTE_TABLE_ID" ]; then
 fi
 
 echo "Tabela de Rotas Principal: $ROUTE_TABLE_ID"
+echo ""
 
 # Cria a rota
 echo "Criando rota para a rede local $LOCAL_NETWORK_CIDR apontando para $SELECTED_ENI..."
@@ -97,3 +98,16 @@ echo aws ec2 create-route \
     --network-interface-id "$SELECTED_ENI"
 
 echo "Configuração concluída com sucesso!"
+
+# Consulta e exibe as rotas atualizadas
+echo ""
+echo "--------------------------------------------------------------------------------------"
+echo "Verificando as rotas atuais na Tabela $ROUTE_TABLE_ID:"
+echo "--------------------------------------------------------------------------------------"
+
+aws ec2 describe-route-tables \
+    --route-table-ids "$ROUTE_TABLE_ID" \
+    --query "RouteTables[0].Routes[*].{Destino:DestinationCidrBlock, Alvo_ENI:NetworkInterfaceId, Alvo_Gateway:GatewayId, Status:State}" \
+    --output table
+
+echo ""
