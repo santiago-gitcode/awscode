@@ -1,5 +1,5 @@
 #!/bin/sh
-# CALL: wget -qO- https://tinyurl.com/verificar | sh
+# CALL: wget -qO- https://tinyurl.com/CreateRota | sh
 
 LOCAL_NETWORK_CIDR="192.168.10.0/24"
 
