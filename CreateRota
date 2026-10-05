@@ -92,7 +92,7 @@ echo ""
 
 # Cria a rota
 echo "Criando rota para a rede local $LOCAL_NETWORK_CIDR apontando para $SELECTED_ENI..."
-echo aws ec2 create-route \
+aws ec2 create-route \
     --route-table-id "$ROUTE_TABLE_ID" \
     --destination-cidr-block "$LOCAL_NETWORK_CIDR" \
     --network-interface-id "$SELECTED_ENI"
@@ -102,7 +102,7 @@ echo "Configuração concluída com sucesso!"
 # Consulta e exibe as rotas atualizadas
 echo ""
 echo "--------------------------------------------------------------------------------------"
-echo "Verificando as rotas atuais na Tabela $ROUTE_TABLE_ID:"
+echo "Verificando as rotas atuais na Tabela $ROUTE_TABLE_ID: (VPC/Tabela de Rotas)"
 echo "--------------------------------------------------------------------------------------"
 
 aws ec2 describe-route-tables \
