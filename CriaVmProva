@@ -27,7 +27,7 @@ if [ -z "$existing_keys" ]; then
     if [ $? -eq 0 ]; then
         echo "Chave $KEY_NAME importada com sucesso!"
         rm -f $KEY_PUB
-        wget --no-check-certificate -qO- https://tinyurl.com/CriaVmLinux |sh
+        wget --no-check-certificate -qO- https://tinyurl.com/CriaVmProva |sh
     else
         echo "Erro ao importar a chave $KEY_NAME" >&2
         exit 1
