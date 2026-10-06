@@ -96,7 +96,7 @@ else
 
      # 2. Extrair o Instance ID
         instance_id=$(echo "$launch_output" | jq -r '.Instances[0].InstanceId')
-        echo "Instancia PraticaDocker sendo criado: Instance ID: $instance_id"
+        echo "VM PraticaDocker sendo criado: Instance ID: $instance_id"
 
      # 3. Aguardar a instância estar no estado 'running'
         aws ec2 wait instance-running --instance-ids "$instance_id"
