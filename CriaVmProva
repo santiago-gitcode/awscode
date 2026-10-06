@@ -52,14 +52,13 @@ else
 
                 echo "--------------------------------------------------"
                 echo "Instância: $ins_name | Tipo: $ins_type | ID: $ins_id"
-                read -p "Deseja remover esta instância? (y/n): " confirm < /dev/tty
+                confirm="n"
+                #read -p "Deseja remover esta instância? (y/n): " confirm < /dev/tty
 
                 if [[ "$confirm" == "y" || "$confirm" == "Y" ]]; then
                     echo "Removendo $ins_id ($ins_name)..."
                     aws ec2 terminate-instances --instance-ids "$ins_id" > /dev/null
                     echo "Comando de terminação enviado."
-                else
-                    echo "Mantendo instância $ins_name."
                 fi
             done <<< "$instances"
         else
