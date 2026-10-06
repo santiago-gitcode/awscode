@@ -51,7 +51,7 @@ else
                 [ -z "$ins_name" ] && ins_name="Sem Nome"
 
                 echo "--------------------------------------------------"
-                echo "Instância: $ins_name | Tipo: $ins_type | ID: $ins_id"
+                echo "Instância: $ins_name | Tipo: $ins_type "
                 confirm="n"
                 #read -p "Deseja remover esta instância? (y/n): " confirm < /dev/tty
 
