@@ -11,7 +11,7 @@ if ! aws ec2 describe-instances --query "Reservations[*].Instances[*].{ \
 
     # Bloco executado apenas se o comando AWS falhar
     printf "\n\033[31mERRO DE CREDENCIAIS:\033[0m Esse terminal não detectou corretamente a sua credencial de conexão com a AWS.\n"
-    printf "Isso é comum ocorrer nessa tela inicial do ambiente Learning Labs da AWS e Vocareum.\n\n"
+    printf "Isso é comum ocorrer nessa tela inicial do ambiente Learning Labs da AWS com Vocareum.\n\n"
     printf "\033[1mCOMO RESOLVER:\033[0m\n"
     printf "1. Clique no botão 'AWS' (com a bolinha verde) para abrir o Console da AWS.\n"
     printf "2. No final da tela do Console, lado esquerdo, clique no ícone do \033[1m CloudShell\033[0m (ícone de terminal >_).\n"
