@@ -1,5 +1,18 @@
 # CALL: wget -qO- https://tinyurl.com/exibeIP |sh
 
+# O "2>/dev/null" ignora erros aqui, pois o bloco seguinte tratará as falhas de conexão
+IP_LIST=$(aws ec2 describe-instances --filters "Name=instance-state-name,Values=running" --query "Reservations[*].Instances[*].PublicIpAddress" --output text 2>/dev/null)
+
+# Conta quantos IPs (palavras) retornaram na variável
+QTD_IPS=$(echo "$IP_LIST" | wc -w)
+
+# Define qual será o valor do IP na string final com base na contagem
+if [ "$QTD_IPS" -eq 1 ]; then
+    ALVO_SSH="$IP_LIST"
+else
+    ALVO_SSH="IP_DO_SEU_SERVIDOR"
+fi
+
 # O "if ! ..." verifica se o comando falhou (retornou um código diferente de zero)
 if ! aws ec2 describe-instances --query "Reservations[*].Instances[*].{ \
         \"1_Name\":Tags[?Key=='Name']|[0].Value, \
@@ -32,5 +45,5 @@ printf "Considere usar esse comando para copiar a chave para seu ambiente local:
 printf "\n"
 printf "CMD (Prompt de Comandos): \033[31mcurl -fsSLk -o chaveVM.pem https://tinyurl.com/chaveVM\033[0m\n"
 printf "\n"
-printf "Acessando a VM: \033[31mssh -i chaveVM.pem admin@IP_DO_SEU_SERVIDOR\033[0m\n"
+printf "Acessando a VM: \033[31mssh -i chaveVM.pem admin@%s\033[0m\n" "$ALVO_SSH"
 printf "\n"
