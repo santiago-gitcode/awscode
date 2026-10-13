@@ -1,26 +1,36 @@
 # CALL: wget -qO- https://tinyurl.com/exibeIP |sh
 
-
-# Exibindo as informações da conta
-#aws sts get-caller-identity
-
-# Buscando informações de todas as suas instâncias ec2 em execução na sua conta AWS
-aws ec2 describe-instances --query "Reservations[*].Instances[*].{ \
+# O "if ! ..." verifica se o comando falhou (retornou um código diferente de zero)
+if ! aws ec2 describe-instances --query "Reservations[*].Instances[*].{ \
         \"1_Name\":Tags[?Key=='Name']|[0].Value, \
         \"2_Tipo\":InstanceType, \
         \"3_Zone\":Placement.AvailabilityZone, \
         \"4_PublicIP\":PublicIpAddress}" \
     --filters "Name=instance-state-name,Values=running" \
-    --output table
+    --output table 2>/dev/null; then
 
-# Exibindo o link para o download da Chave Privada
-echo ""
-echo "ATENÇÃO: Se sua instância foi criada pelo script awscode do Prof. Santiago ela pode ser acessível pela"
-echo -e " chave privada (.pem): \033[1mhttps://tinyurl.com/chaveVM\033[0m"
-echo ""
-echo "Considere usar esse comando para copiar a chave para seu ambiente local:"
-echo ""
-echo -e "CMD (Prompt de Comandos): \033[31mcurl -k -L -s -o chaveVM.pem https://tinyurl.com/chaveVM\033[0m"
-echo ""
-echo -e "Acessando a VM: \033[31mssh -i chaveVM.pem admin@IP_DO_SEU_SERVIDOR\033[0m"
-echo ""
+    # Bloco executado apenas se o comando AWS falhar
+    printf "\n\033[31mERRO DE CREDENCIAIS:\033[0m O terminal atual perdeu a conexão com a AWS.\n"
+    printf "Isso é comum ocorrer na tela inicial do ambiente Vocareum.\n\n"
+    printf "\033[1mCOMO RESOLVER:\033[0m\n"
+    printf "1. Clique no botão 'AWS' (com a bolinha verde) para abrir o Console da AWS.\n"
+    printf "2. No topo da tela do Console, clique no ícone do \033[1mCloudShell\033[0m (ícone de terminal >_).\n"
+    printf "3. Aguarde o ambiente carregar e cole o comando novamente:\n"
+    printf "   \033[31mwget -qO- https://tinyurl.com/exibeIP | sh\033[0m\n\n"
+    
+    # Interrompe a execução do script para não exibir o restante das mensagens de forma desconexa
+    exit 1
+fi
+
+# Se o comando rodar com sucesso, o script continua e exibe as informações da chave usando printf
+# O \n no final de cada printf é necessário para quebrar a linha, já que o printf não faz isso automaticamente como o echo
+printf "\n"
+printf "ATENÇÃO: Se sua instância foi criada pelo script awscode do Prof. Santiago ela pode ser acessível pela\n"
+printf " chave privada (.pem): \033[1mhttps://tinyurl.com/chaveVM\033[0m\n"
+printf "\n"
+printf "Considere usar esse comando para copiar a chave para seu ambiente local:\n"
+printf "\n"
+printf "CMD (Prompt de Comandos): \033[31mcurl -k -L -s -o chaveVM.pem https://tinyurl.com/chaveVM\033[0m\n"
+printf "\n"
+printf "Acessando a VM: \033[31mssh -i chaveVM.pem admin@IP_DO_SEU_SERVIDOR\033[0m\n"
+printf "\n"
