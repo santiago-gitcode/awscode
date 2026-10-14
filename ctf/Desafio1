@@ -30,28 +30,74 @@ echo "FLAG{FTP_RICK_FLAG_FOUND}" > /srv/ftp/flag.txt
 chown -R ftp:nogroup /srv/ftp
 systemctl restart vsftpd
 
-# 4. CONFIGURAÇÃO DO APACHE (Porta 80 e Porta 9090)
-# Ativar módulos necessários para os desafios web (como CGI)
+# ==========================================
+# 4. CONFIGURAÇÃO DO APACHE (Porta 80 HTTP e Porta 9090 HTTPS)
+# ==========================================
+# Ativar os módulos necessários: CGI (para os scripts) e SSL (para a porta 9090)
 a2enmod cgi
+a2enmod ssl
 
-# Criar a pasta de senhas no diretório web da porta 80
+# ---- CONFIGURAÇÃO DA PORTA 80 (HTTP Padrão) ----
+# Criar a pasta de senhas e a dica oculta da Summer
 mkdir -p /var/www/html/passwords
-echo "<h3>A senha da Summer e winter</h3><!-- Dica oculta aqui se desejar -->" > /var/www/html/passwords/passwords.html
+echo "<h3>A senha da Summer e winter</h3>" > /var/www/html/passwords/passwords.html
 
-# Configurar a segunda porta do Apache (9090)
-echo "Listen 9090" >> /etc/apache2/ports.conf
+# ---- CONFIGURAÇÃO DA PORTA 9090 (HTTPS / Zeus Login Fake) ----
+# Garante que o Apache escute na porta 9090 além das portas padrão
+if ! grep -q "Listen 9090" /etc/apache2/ports.conf; then
+    echo "Listen 9090" >> /etc/apache2/ports.conf
+fi
 
-# Criar um VirtualHost básico para responder na porta 9090
+# Criar um diretório seguro para armazenar as chaves SSL autoassinadas
+mkdir -p /etc/apache2/ssl
+
+# Gerar a Chave Privada e o Certificado Autoassinado silenciosamente via OpenSSL
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+    -keyout /etc/apache2/ssl/zeus.key \
+    -out /etc/apache2/ssl/zeus.crt \
+    -subj "/C=US/ST=Earth/L=C-137/O=ZeusAdmin/OU=FakeLogin/CN=zeus-admin.local"
+
+# Criar o VirtualHost dedicado na porta 9090 forçando o uso de SSL
 cat << 'EOF' > /etc/apache2/sites-available/port9090.conf
 <VirtualHost *:9090>
     DocumentRoot /var/www/html_9090
+    
+    # Ativação do Motor SSL
+    SSLEngine on
+    SSLCertificateFile /etc/apache2/ssl/zeus.crt
+    SSLCertificateKeyFile /etc/apache2/ssl/zeus.key
+
+    # Opcional: Customização básica para parecer uma tela de login ou contexto do Zeus
+    <Directory /var/www/html_9090>
+        Options Indexes FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
 </VirtualHost>
 EOF
 
+# Criar a raiz do site da porta 9090 e colocar a flag solicitada
 mkdir -p /var/www/html_9090
-echo "FLAG{HTTP_PORT_9090_FLAG}" > /var/www/html_9090/index.html
+cat << 'EOF' > /var/www/html_9090/index.html
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Zeus Admin - Login</title>
+</head>
+<body style="background-color: #111; color: #fff; font-family: sans-serif; text-align: center; padding-top: 50px;">
+    <h2>Zeus-Admin Panel</h2>
+    <p style="color: #ff3333; font-weight: bold;">FLAG {There is no Zeus, in your face!} - 10 Points</p>
+    <!-- Um formulário visual fake para simular o ambiente de login -->
+    <form style="margin-top: 30px;">
+        <input type="text" placeholder="Username" disabled><br><br>
+        <input type="password" placeholder="Password" disabled><br><br>
+        <button type="button">Login</button>
+    </form>
+</body>
+</html>
+EOF
 
-# Ativar o site da porta 9090 e reiniciar o Apache
+# Ativar a configuração do site HTTPS da porta 9090 e reiniciar o servidor Apache
 a2ensite port9090.conf
 systemctl restart apache2
 
