@@ -25,28 +25,28 @@ echo "RickSanchez ALL=(ALL:ALL) ALL" >> /etc/sudoers
 # ==========================================
 # 3. CONFIGURAÇÃO DO SERVIÇO FTP (Porta 21)
 # ==========================================
-# 1. Habilitar o login anônimo e garantir configurações básicas no vsftpd.conf
+# 1. Habilitar o login anônimo no arquivo de configuração principal
 sed -i 's/anonymous_enable=NO/anonymous_enable=YES/g' /etc/vsftpd.conf
 
-# 2. CORREÇÃO DO ERRO 500: Permitir explicitamente a raiz com permissão de escrita
-if ! grep -q "allow_writeable_chroot" /etc/vsftpd.conf; then
-    echo "allow_writeable_chroot=YES" >> /etc/vsftpd.conf
-fi
-
-# 3. Configurações adicionais comuns para FTP em laboratórios/CTF
+# 2. Configurar explicitamente a pasta raiz do usuário anônimo
 if ! grep -q "anon_root" /etc/vsftpd.conf; then
     echo "anon_root=/srv/ftp" >> /etc/vsftpd.conf
 fi
 
-# 4. Criar e garantir os privilégios corretos do diretório
+# 3. Criar a estrutura de diretórios
 mkdir -p /srv/ftp
-echo "FLAG{FTP_RICK_FLAG_FOUND}" > /srv/ftp/flag.txt
 
-# Definir as permissões adequadas para o usuário nativo do FTP
-chown -R ftp:nogroup /srv/ftp
+# 4. GERENCIAMENTO DE PERMISSÕES (Correção definitiva do Erro 500)
+# A pasta raiz do FTP anônimo DEVE pertencer ao root e NÃO pode ter permissão de escrita
+chown root:root /srv/ftp
 chmod 755 /srv/ftp
 
-# 5. Reiniciar o serviço para aplicar as novas regras
+# 5. Criar a Flag dentro da pasta (o aluno terá permissão de leitura sobre o arquivo)
+echo "FLAG{FTP_RICK_FLAG_FOUND}" > /srv/ftp/flag.txt
+chown root:root /srv/ftp/flag.txt
+chmod 644 /srv/ftp/flag.txt
+
+# 6. Reiniciar o serviço para aplicar as novas diretrizes
 systemctl restart vsftpd
 
 # ==========================================
