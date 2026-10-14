@@ -136,22 +136,27 @@ mkdir -p /opt/ctf
 echo "FLAG {Welcome_to_the_real_world} - 20 Points" > /home/RickSanchez/flag_60000.txt
 chown RickSanchez:RickSanchez /home/RickSanchez/flag_60000.txt
 
-# ---- RICK'S RESTRICTED SHELL (Apenas ls, pwd, cd, cat) ----
+# ---- RICK'S RESTRICTED SHELL (Apenas ls, pwd, cd, cat - Com Jaula de Diretório) ----
 cat << 'EOF' > /opt/ctf/restricted_shell.py
 #!/usr/bin/env python3
 import os
 import sys
 import subprocess
 
-os.chdir('/home/RickSanchez')
+# Define e fixa a raiz da jaula (Home do Rick)
+JAIL_ROOT = '/home/RickSanchez'
+os.chdir(JAIL_ROOT)
+
 ALLOWED_COMMANDS = ['ls', 'pwd', 'cd', 'cat']
 
 def print_prompt():
     current_dir = os.getcwd()
-    sys.stdout.write(f"rick-shell:{current_dir}$ ")
+    # Adicionado \r\n para corrigir o desalinhamento do cursor via Netcat/Telnet
+    sys.stdout.write(f"\r\nrick-shell:{current_dir}$ ")
     sys.stdout.flush()
 
-sys.stdout.write("=== RICK'S SECURE TERMINAL v1.0 ===\n")
+# Cabeçalho corrigido com \r\n para o alinhamento inicial correto
+sys.stdout.write("=== RICK'S SECURE TERMINAL v1.0 ===\r\n")
 sys.stdout.flush()
 
 while True:
@@ -166,32 +171,68 @@ while True:
         parts = cmd_line.split()
         base_cmd = parts[0]
         
+        # 1. Validação contra a Whitelist de comandos
         if base_cmd not in ALLOWED_COMMANDS:
-            sys.stdout.write(f"bash: {base_cmd}: command not found\n")
+            sys.stdout.write(f"bash: {base_cmd}: command not found\r\n")
             sys.stdout.flush()
             continue
             
+        # Bloqueio de caracteres maliciosos de encadeamento de comandos
+        if ';' in cmd_line or '|' in cmd_line or '&' in cmd_line or '$' in cmd_line:
+            sys.stdout.write("Error: Character not allowed in secure mode.\r\n")
+            sys.stdout.flush()
+            continue
+
+        # 2. CONTROLE DO COMANDO 'cd' (Prevenção de fuga de diretório / Fuga de Jaula)
         if base_cmd == 'cd':
-            try:
-                target_dir = parts[1] if len(parts) > 1 else '/home/RickSanchez'
-                os.chdir(target_dir)
-            except Exception as e:
-                sys.stdout.write(f"cd: {str(e)}\n")
+            target_dir = parts[1] if len(parts) > 1 else JAIL_ROOT
+            
+            # Calcula o caminho absoluto real que o usuário quer ir (resolve os ../..)
+            potential_dir = os.path.abspath(os.path.join(os.getcwd(), target_dir))
+            
+            # Verifica se o diretório alvo começa com o caminho da Jaula
+            if potential_dir.startswith(JAIL_ROOT):
+                try:
+                    os.chdir(potential_dir)
+                except Exception as e:
+                    sys.stdout.write(f"cd: {str(e)}\r\n")
+            else:
+                sys.stdout.write("Permission denied: You cannot leave Rick's home directory!\r\n")
             continue
             
-        try:
-            if ';' in cmd_line or '|' in cmd_line or '&' in cmd_line or '$' in cmd_line:
-                sys.stdout.write("Error: Character not allowed in secure mode.\n")
+        # 3. CONTROLE DO COMANDO 'cat' (Garante que ele não leia arquivos fora da pasta)
+        if base_cmd == 'cat' and len(parts) > 1:
+            # Protege contra o aluno tentar ler arquivos fora da jaula usando caminhos relativos ou absolutos
+            # Ex: cat /etc/passwd ou cat ../../etc/passwd
+            has_bypass_attempt = False
+            for arg in parts[1:]:
+                # Ignora argumentos que são flags (como -n, -e)
+                if arg.startswith('-'):
+                    continue
+                potential_file = os.path.abspath(os.path.join(os.getcwd(), arg))
+                if not potential_file.startswith(JAIL_ROOT):
+                    has_bypass_attempt = True
+                    break
+            
+            if has_bypass_attempt:
+                sys.stdout.write("Permission denied: Access restriction active.\r\n")
                 sys.stdout.flush()
                 continue
+
+        # 4. Execução controlada dos comandos válidos (ls, pwd, cat)
+        try:
             result = subprocess.run(parts, capture_output=True, text=True, timeout=5)
-            sys.stdout.write(result.stdout)
-            sys.stdout.write(result.stderr)
+            # Converte as quebras de linha da saída do sistema para incluir o \r
+            stdout_fixed = result.stdout.replace('\n', '\r\n')
+            stderr_fixed = result.stderr.replace('\n', '\r\n')
+            sys.stdout.write(stdout_fixed)
+            sys.stdout.write(stderr_fixed)
         except Exception as e:
-            sys.stdout.write(f"Execution error: {str(e)}\n")
+            sys.stdout.write(f"Execution error: {str(e)}\r\n")
         sys.stdout.flush()
+        
     except KeyboardInterrupt:
-        sys.stdout.write("\nUse close connection to leave.\n")
+        sys.stdout.write("\r\nUse close connection to leave.\r\n")
         sys.stdout.flush()
     except Exception:
         break
