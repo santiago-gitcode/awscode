@@ -22,12 +22,31 @@ useradd -m -s /bin/bash Morty
 # Adicionar RickSanchez ao grupo sudoers (com privilégios de root)
 echo "RickSanchez ALL=(ALL:ALL) ALL" >> /etc/sudoers
 
+# ==========================================
 # 3. CONFIGURAÇÃO DO SERVIÇO FTP (Porta 21)
-# Permitir login anônimo e apontar para o diretório padrão
+# ==========================================
+# 1. Habilitar o login anônimo e garantir configurações básicas no vsftpd.conf
 sed -i 's/anonymous_enable=NO/anonymous_enable=YES/g' /etc/vsftpd.conf
+
+# 2. CORREÇÃO DO ERRO 500: Permitir explicitamente a raiz com permissão de escrita
+if ! grep -q "allow_writeable_chroot" /etc/vsftpd.conf; then
+    echo "allow_writeable_chroot=YES" >> /etc/vsftpd.conf
+fi
+
+# 3. Configurações adicionais comuns para FTP em laboratórios/CTF
+if ! grep -q "anon_root" /etc/vsftpd.conf; then
+    echo "anon_root=/srv/ftp" >> /etc/vsftpd.conf
+fi
+
+# 4. Criar e garantir os privilégios corretos do diretório
 mkdir -p /srv/ftp
 echo "FLAG{FTP_RICK_FLAG_FOUND}" > /srv/ftp/flag.txt
+
+# Definir as permissões adequadas para o usuário nativo do FTP
 chown -R ftp:nogroup /srv/ftp
+chmod 755 /srv/ftp
+
+# 5. Reiniciar o serviço para aplicar as novas regras
 systemctl restart vsftpd
 
 # ==========================================
