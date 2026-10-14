@@ -1,15 +1,15 @@
 #!/bin/bash
-# CALL: wget -qO- https://tinyurl.com/CriaVmLinux |sh
+# CALL: wget -qO- https://raw.githubusercontent.com/santiago-gitcode/awscode/refs/heads/main/ctf/CriaVMDesafio1 |sh
 
 # URL do seu script de preparação hospedado no GitHub (O script com os desafios do Vulnhub)
-SCRIPT_PREPARACAO_URL="https://githubusercontent.com"
+SCRIPT_PREPARACAO_URL="https://raw.githubusercontent.com/santiago-gitcode/awscode/refs/heads/main/ctf/Desafio1"
 
 # Tipo da Instancia (Tamanho)
 INSTANCE_TIPO="m7i-flex.large"
 #INSTANCE_TIPO="t3.medium"
 
 # Nome da Chave .pem para acesso
-SERVER_NAME="LinuxServer"
+SERVER_NAME="ServerCTF1"
 KEY_NAME="chaveVM"
 
 KEY_PUB="chaveVM.pub"
