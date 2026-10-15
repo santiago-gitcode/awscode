@@ -61,7 +61,7 @@ mkdir -p /var/www/html/passwords
 echo "<h3>A senha da Summer e winter</h3>" > /var/www/html/passwords/passwords.html
 
 # Obtém o conteúdo do index.html a partir da URL externa informada
-wget --no-check-certificate -q -O /var/www/html/index.html https://tinyurl.com/fatecou/index-desafio1.txt
+wget --no-check-certificate -q -O /var/www/html/index.html https://santiago-gitcode.github.io/awscode/index-desafio1.txt
 
 # ---- CRIAÇÃO DA FERRAMENTA VULNERÁVEL (tracertool.cgi) ----
 mkdir -p /usr/lib/cgi-bin
