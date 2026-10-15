@@ -50,43 +50,116 @@ chmod 644 /srv/ftp/flag.txt
 systemctl restart vsftpd
 
 # ==========================================
-# 4. CONFIGURAÇÃO DO APACHE (Porta 80 HTTP e Porta 9090 HTTPS)
+# 4. CONFIGURAÇÃO DO APACHE (Portas 80, 9090 e CGI Tracertool)
 # ==========================================
-# Ativar os módulos necessários: CGI (para os scripts) e SSL (para a porta 9090)
+# Instalar a ferramenta de traceroute que o script web vai invocar no backend
+apt-get install -y traceroute
+
+# Ativar os módulos necessários no Apache: CGI e SSL
 a2enmod cgi
 a2enmod ssl
+# Ativa explicitamente a configuração padrão de CGI do Debian
+a2enconf serve-cgi-bin
 
 # ---- CONFIGURAÇÃO DA PORTA 80 (HTTP Padrão) ----
-# Criar a pasta de senhas e a dica oculta da Summer
 mkdir -p /var/www/html/passwords
 echo "<h3>A senha da Summer e winter</h3>" > /var/www/html/passwords/passwords.html
 
+# Criar uma página inicial simples na porta 80 apontando para o Tracertool
+cat << 'EOF' > /var/www/html/index.html
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Rick's Network Tools</title>
+</head>
+<body style="background-color: #222; color: #fff; font-family: sans-serif; text-align: center; padding-top: 50px;">
+    <h1>Welcome to Rick's Network Diagnostics</h1>
+    <p>Use our advanced portal to diagnose network issues.</p>
+    <a href="/cgi-bin/tracertool.cgi" style="color: #00ff00; font-size: 20px; font-weight: bold; text-decoration: none; border: 2px solid #00ff00; padding: 10px 20px; display: inline-block; margin-top: 20px;">Access Traceroute Tool</a>
+</body>
+</html>
+EOF
+
+# ---- CRIAÇÃO DA FERRAMENTA VULNERÁVEL (tracertool.cgi) ----
+mkdir -p /usr/lib/cgi-bin
+
+cat << 'EOF' > /usr/lib/cgi-bin/tracertool.cgi
+#!/usr/bin/env python3
+import cgi
+import csum # Módulo interno para emular erros se necessário
+import os
+import sys
+import subprocess
+
+# Configura o cabeçalho HTTP obrigatório para scripts CGI
+print("Content-Type: text/html\n")
+
+print("""
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Rick's Traceroute Tool</title>
+</head>
+<body style="background-color: #1a1a1a; color: #00ff00; font-family: monospace; padding: 20px;">
+    <h2>[ Rick's Automated Traceroute Tool v0.4 ]</h2>
+    <form method="GET" action="/cgi-bin/tracertool.cgi">
+        <label>Enter Target IP or Domain: </label>
+        <input type="text" name="target" style="background-color: #333; color: #00ff00; border: 1px solid #00ff00; padding: 5px; width: 300px;" placeholder="e.g., 8.8.8.8">
+        <input type="submit" value="Run Traceroute" style="background-color: #00ff00; color: #000; border: none; padding: 5px 15px; cursor: pointer; font-weight: bold;">
+    </form>
+    <hr style="border-color: #00ff00;">
+    <h3>Execution Output:</h3>
+    <pre style="background-color: #000; padding: 15px; border: 1px dashed #00ff00; min-height: 100px; white-space: pre-wrap;">""")
+
+# Captura os parâmetros enviados via requisição GET
+form = cgi.FieldStorage()
+target = form.getvalue('target')
+
+if target:
+    # VULNERABILIDADE INTENCIONAL: O input do usuário é concatenado diretamente no shell do Linux.
+    # Isso permite o bypass usando ponto e vírgula (;), pipes (|) ou ampersands (&).
+    comando = f"traceroute -m 3 {target}"
+    
+    try:
+        # shell=True é o que torna o Command Injection possível em Python
+        processo = subprocess.run(comando, shell=True, capture_output=True, text=True, timeout=15)
+        print(processo.stdout)
+        print(processo.stderr)
+    except subprocess.TimeoutExpired:
+        print("Error: Execution timed out.")
+    except Exception as e:
+        print(f"Internal Error: {str(e)}")
+else:
+    print("Waiting for input... Please enter a valid target.")
+
+print("""    </pre>
+</body>
+</html>
+""")
+EOF
+
+# Garante que o script CGI pertence ao usuário do Apache e possui permissão de execução
+chown www-data:www-data /usr/lib/cgi-bin/tracertool.cgi
+chmod 755 /usr/lib/cgi-bin/tracertool.cgi
+
+
 # ---- CONFIGURAÇÃO DA PORTA 9090 (HTTPS / Zeus Login Fake) ----
-# Garante que o Apache escute na porta 9090 além das portas padrão
 if ! grep -q "Listen 9090" /etc/apache2/ports.conf; then
     echo "Listen 9090" >> /etc/apache2/ports.conf
 fi
 
-# Criar um diretório seguro para armazenar as chaves SSL autoassinadas
 mkdir -p /etc/apache2/ssl
-
-# Gerar a Chave Privada e o Certificado Autoassinado silenciosamente via OpenSSL
 openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
     -keyout /etc/apache2/ssl/zeus.key \
     -out /etc/apache2/ssl/zeus.crt \
     -subj "/C=US/ST=Earth/L=C-137/O=ZeusAdmin/OU=FakeLogin/CN=zeus-admin.local"
 
-# Criar o VirtualHost dedicado na porta 9090 forçando o uso de SSL
 cat << 'EOF' > /etc/apache2/sites-available/port9090.conf
 <VirtualHost *:9090>
     DocumentRoot /var/www/html_9090
-    
-    # Ativação do Motor SSL
     SSLEngine on
     SSLCertificateFile /etc/apache2/ssl/zeus.crt
     SSLCertificateKeyFile /etc/apache2/ssl/zeus.key
-
-    # Opcional: Customização básica para parecer uma tela de login ou contexto do Zeus
     <Directory /var/www/html_9090>
         Options Indexes FollowSymLinks
         AllowOverride All
@@ -95,7 +168,6 @@ cat << 'EOF' > /etc/apache2/sites-available/port9090.conf
 </VirtualHost>
 EOF
 
-# Criar a raiz do site da porta 9090 e colocar a flag solicitada
 mkdir -p /var/www/html_9090
 cat << 'EOF' > /var/www/html_9090/index.html
 <!DOCTYPE html>
@@ -107,7 +179,7 @@ cat << 'EOF' > /var/www/html_9090/index.html
     <h2>Zeus-Admin Panel</h2>
     <p style="color: #ff3333; font-weight: bold;">FLAG {There is no Zeus, in your face!} - 10 Points</p>
     <form style="margin-top: 30px;">
-        <input type="text" placeholder="Username"><br><br>
+        <input type="text" placeholder="Username" disabled><br><br>
         <input type="password" placeholder="Password" disabled><br><br>
         <button type="button">Login</button>
     </form>
@@ -115,9 +187,11 @@ cat << 'EOF' > /var/www/html_9090/index.html
 </html>
 EOF
 
-# Ativar a configuração do site HTTPS da porta 9090 e reiniciar o servidor Apache
 a2ensite port9090.conf
+
+# Reinicia o Apache para aplicar o módulo CGI, as permissões e o novo site 9090
 systemctl restart apache2
+
 
 # ==========================================
 # 5. CONFIGURAÇÃO DO SSH REAL (Apenas Porta 22222)

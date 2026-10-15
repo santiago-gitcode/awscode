@@ -132,7 +132,7 @@ EOF
 
                 echo "--------------------------------------------------"
                 echo " "
-                echo "SERVER_NAME Criado com Sucesso!! "
+                echo "$SERVER_NAME Criado com Sucesso!! "
                 echo "IP da Instância: $public_ip"
                 echo " "
                 echo "--------------------------------------------------"
