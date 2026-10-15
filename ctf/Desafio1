@@ -7,7 +7,7 @@ export DEBIAN_FRONTEND=noninteractive
 
 # 1. ATUALIZAÇÃO DO SISTEMA E INSTALAÇÃO DOS SERVIÇOS
 apt-get update -y
-apt-get install -y apache2 vsftpd openssh-server netcat-openbsd python3 curl unzip
+apt-get install -y apache2 vsftpd openssh-server netcat-openbsd python3 curl unzip traceroute
 
 # 2. CRIAÇÃO DE USUÁRIOS COM HASHES SHA-512 
 # Senha da Summer: winter
@@ -36,12 +36,11 @@ fi
 # 3. Criar a estrutura de diretórios
 mkdir -p /srv/ftp
 
-# 4. GERENCIAMENTO DE PERMISSÕES (Correção definitiva do Erro 500)
-# A pasta raiz do FTP anônimo DEVE pertencer ao root e NÃO pode ter permissão de escrita
+# 4. GERENCIAMENTO DE PERMISSÕES (Anônimo requer pasta root sem escrita)
 chown root:root /srv/ftp
 chmod 755 /srv/ftp
 
-# 5. Criar a Flag dentro da pasta (o aluno terá permissão de leitura sobre o arquivo)
+# 5. Criar a Flag dentro da pasta (permissão de leitura pública)
 echo "FLAG{FTP_RICK_FLAG_FOUND}" > /srv/ftp/flag.txt
 chown root:root /srv/ftp/flag.txt
 chmod 644 /srv/ftp/flag.txt
@@ -52,13 +51,9 @@ systemctl restart vsftpd
 # ==========================================
 # 4. CONFIGURAÇÃO DO APACHE (Portas 80, 9090 e CGI Tracertool)
 # ==========================================
-# Instalar a ferramenta de traceroute que o script web vai invocar no backend
-apt-get install -y traceroute
-
 # Ativar os módulos necessários no Apache: CGI e SSL
 a2enmod cgi
 a2enmod ssl
-# Ativa explicitamente a configuração padrão de CGI do Debian
 a2enconf serve-cgi-bin
 
 # ---- CONFIGURAÇÃO DA PORTA 80 (HTTP Padrão) ----
@@ -80,7 +75,7 @@ cat << 'EOF' > /var/www/html/index.html
 </html>
 EOF
 
-# ---- CRIAÇÃO DA FERRAMENTA VULNERÁVEL (tracertool.cgi - Compatível com Python Moderno) ----
+# ---- CRIAÇÃO DA FERRAMENTA VULNERÁVEL (tracertool.cgi) ----
 mkdir -p /usr/lib/cgi-bin
 
 cat << 'EOF' > /usr/lib/cgi-bin/tracertool.cgi
@@ -90,9 +85,7 @@ import sys
 import subprocess
 from urllib.parse import parse_qs
 
-# Configura o cabeçalho HTTP obrigatório para scripts CGI
 print("Content-Type: text/html\n")
-
 print("""
 <!DOCTYPE html>
 <html>
@@ -110,20 +103,14 @@ print("""
     <h3>Execution Output:</h3>
     <pre style="background-color: #000; padding: 15px; border: 1px dashed #00ff00; min-height: 100px; white-space: pre-wrap;">""")
 
-# Captura os parâmetros enviados via requisição GET usando variáveis de ambiente nativas
 query_string = os.environ.get('QUERY_STRING', '')
 arguments = parse_qs(query_string)
-
-# Extrai o valor do parâmetro 'target' se ele existir
 target_list = arguments.get('target', [])
 target = target_list[0] if target_list else None
 
 if target:
-    # VULNERABILIDADE INTENCIONAL: O input do usuário é concatenado diretamente no shell do Linux.
     comando = f"traceroute -m 3 {target}"
-    
     try:
-        # shell=True torna o Command Injection perfeitamente funcional
         processo = subprocess.run(comando, shell=True, capture_output=True, text=True, timeout=15)
         print(processo.stdout)
         print(processo.stderr)
@@ -140,12 +127,8 @@ print("""    </pre>
 """)
 EOF
 
-# Garante as permissões corretas
 chown www-data:www-data /usr/lib/cgi-bin/tracertool.cgi
 chmod 755 /usr/lib/cgi-bin/tracertool.cgi
-
-# Reinicia o Apache para garantir o reload completo
-systemctl restart apache2
 
 # ---- CONFIGURAÇÃO DA PORTA 9090 (HTTPS / Zeus Login Fake) ----
 if ! grep -q "Listen 9090" /etc/apache2/ports.conf; then
@@ -153,10 +136,7 @@ if ! grep -q "Listen 9090" /etc/apache2/ports.conf; then
 fi
 
 mkdir -p /etc/apache2/ssl
-openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-    -keyout /etc/apache2/ssl/zeus.key \
-    -out /etc/apache2/ssl/zeus.crt \
-    -subj "/C=US/ST=Earth/L=C-137/O=ZeusAdmin/OU=FakeLogin/CN=zeus-admin.local"
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/apache2/ssl/zeus.key -out /etc/apache2/ssl/zeus.crt -subj "/C=US/ST=Earth/L=C-137/O=ZeusAdmin/OU=FakeLogin/CN=zeus-admin.local"
 
 cat << 'EOF' > /etc/apache2/sites-available/port9090.conf
 <VirtualHost *:9090>
@@ -193,14 +173,18 @@ EOF
 
 a2ensite port9090.conf
 
-# Reinicia o Apache para aplicar o módulo CGI, as permissões e o novo site 9090
-systemctl restart apache2
+# ---- HARDENING DO APACHE (Ocultar Versões/Assinaturas) ----
+# Desativa a assinatura no rodapé das páginas (ServerSignature Off)
+sed -i 's/^ServerSignature .*/ServerSignature Off/' /etc/apache2/conf-enabled/security.conf
 
+# Altera a exibição do cabeçalho HTTP para o modo de produção mínimo (ServerTokens Prod)
+sed -i 's/^ServerTokens .*/ServerTokens Prod/' /etc/apache2/conf-enabled/security.conf
+
+systemctl restart apache2
 
 # ==========================================
 # 5. CONFIGURAÇÃO DO SSH REAL (Apenas Porta 22222)
 # ==========================================
-# Remove qualquer configuração duplicada e força o SSH real a rodar na 22222
 sed -i 's/^#\?Port .*/Port 22222/' /etc/ssh/sshd_config
 systemctl restart ssh
 
@@ -210,10 +194,41 @@ systemctl restart ssh
 mkdir -p /opt/ctf
 
 # ---- DESAFIO PORTA 60000 (Criação da Flag no Sistema) ----
+
 echo "FLAG {Welcome_to_the_real_world} - 20 Points" > /home/RickSanchez/flag_60000.txt
 chown RickSanchez:RickSanchez /home/RickSanchez/flag_60000.txt
 
-# ---- RICK'S RESTRICTED SHELL (Versão com Comando Exit) ----
+# ---- DESAFIO DO ARQUIVO ZIP CRIPTOGRAFADO (Home do Morty) ----
+# 1. Instalar o utilitário zip caso não esteja presente (essencial para criar o desafio)
+apt-get install -y zip
+
+# 2. Criar a pista oculta que ficará guardada dentro do ZIP seguro
+mkdir -p /tmp/morty_challenge
+cat << 'EOF' > /tmp/morty_challenge/rick_diary.txt
+FLAG{ZIP_BROKEN_MORTY_SECRET} - 15 Points
+
+Anotações do Morty:
+O Rick está escondendo algo muito grande no diretório dele. 
+Eu acho que a senha do SSH dele tem algo a ver com cortinas daquela antiga banda dele... 
+Acho que a senha dele é "P7Curtains".
+EOF
+
+# 3. Compactar o arquivo aplicando a senha secreta "meeseeks"
+# O parâmetro -P define a senha diretamente em lote pelo script de provisionamento
+cd /tmp/morty_challenge
+zip -P "meeseeks" journal.zip rick_diary.txt
+
+# 4. Mover o ZIP para o diretório home do Morty com as permissões corretas
+mv journal.zip /home/Morty/
+chown Morty:Morty /home/Morty/journal.zip
+chmod 644 /home/Morty/journal.zip
+
+# 5. Limpeza de rastros no diretório temporário
+rm -rf /tmp/morty_challenge
+cd /
+
+
+# ---- RICK'S RESTRICTED SHELL (Apenas ls, pwd, cd, cat, exit) ----
 cat << 'EOF' > /opt/ctf/restricted_shell.py
 #!/usr/bin/env python3
 import os
@@ -223,7 +238,6 @@ import subprocess
 JAIL_ROOT = '/home/RickSanchez'
 os.chdir(JAIL_ROOT)
 
-# 1. Comandos Permitidos
 ALLOWED_COMMANDS = ['ls', 'pwd', 'cd', 'cat', 'exit']
 
 def print_prompt():
@@ -244,7 +258,7 @@ while True:
         if not cmd_line:
             continue
         parts = cmd_line.split()
-        base_cmd = parts[0]
+        base_cmd = parts[0] if parts else ''
         
         if base_cmd not in ALLOWED_COMMANDS:
             sys.stdout.write(f"bash: {base_cmd}: command not found\r\n")
@@ -256,13 +270,11 @@ while True:
             sys.stdout.flush()
             continue
 
-        # 2. Tratamento do comando EXIT
         if base_cmd == 'exit':
             sys.stdout.write("Goodbye!\r\n")
             sys.stdout.flush()
             break
 
-        # 3. CONTROLE DO COMANDO 'cd'
         if base_cmd == 'cd':
             target_dir = parts[1] if len(parts) > 1 else JAIL_ROOT
             potential_dir = os.path.abspath(os.path.join(os.getcwd(), target_dir))
@@ -275,7 +287,6 @@ while True:
                 sys.stdout.write("Permission denied: You cannot leave Rick's home directory!\r\n")
             continue
             
-        # 4. CONTROLE DO COMANDO 'cat'
         if base_cmd == 'cat' and len(parts) > 1:
             has_bypass_attempt = False
             for arg in parts[1:]:
@@ -290,7 +301,6 @@ while True:
                 sys.stdout.flush()
                 continue
 
-        # 5. Execução dos comandos permitidos
         try:
             result = subprocess.run(parts, capture_output=True, text=True, timeout=5)
             stdout_fixed = result.stdout.replace('\n', '\r\n')
@@ -300,7 +310,6 @@ while True:
         except Exception as e:
             sys.stdout.write(f"Execution error: {str(e)}\r\n")
         sys.stdout.flush()
-        
     except KeyboardInterrupt:
         sys.stdout.write("\r\nUse exit to leave.\r\n")
         sys.stdout.flush()
@@ -310,15 +319,11 @@ EOF
 
 chmod +x /opt/ctf/restricted_shell.py
 
-# ---- SCRIPT DO NETCAT COMPATÍVEL COM DEBIAN ----
+# ---- SCRIPT DO NETCAT COMPATÍVEL COM DEBIAN (Sem a flag -e) ----
 cat << 'EOF' > /opt/ctf/nc_60000.sh
 #!/bin/bash
-# Remove resíduos anteriores e cria o canal pipe seguro
 rm -f /tmp/f60k; mkfifo /tmp/f60k
-
-# Loop infinito para manter a porta aberta
 while true; do
-    # Força o Netcat do Debian a rodar a Sandbox em Python sem usar a flag '-e'
     cat /tmp/f60k | /opt/ctf/restricted_shell.py 2>&1 | nc -l -p 60000 > /tmp/f60k
     sleep 1
 done
@@ -327,14 +332,14 @@ EOF
 # ---- DESAFIO PORTA 22 (SSH FAKE) ----
 cat << 'EOF' > /opt/ctf/ssh_fake.sh
 while true; do 
-    echo "SSH-2.0-OpenSSH_6.6.1p1 Ubuntu-2ubuntu2" | nc -l -p 22 
+    echo "SSH-2.0-OpenSSH_6.6.1p1 Ubuntu-2ubuntu2" | nc -l -p 22
 done
 EOF
 
 # ---- DESAFIO PORTA 13337 ----
 echo 'while true; do echo "FLAG{NETCAT_13337_EASY_FLAG}" | nc -l -p 13337; done' > /opt/ctf/nc_13337.sh
 
-# Dar permissão e executar tudo em background
+# Dar permissão e executar todos os listeners em background desvinculados do terminal
 chmod +x /opt/ctf/*.sh
 nohup /opt/ctf/ssh_fake.sh >/dev/null 2>&1 &
 nohup /opt/ctf/nc_13337.sh >/dev/null 2>&1 &
