@@ -239,7 +239,7 @@ cat << 'EOF' > /opt/ctf/nc_60000.sh
 # Remove resíduos anteriores e cria o canal pipe seguro
 rm -f /tmp/f60k; mkfifo /tmp/f60k
 
-# Loop infinito para manter a porta aberta para os alunos
+# Loop infinito para manter a porta aberta
 while true; do
     # Força o Netcat do Debian a rodar a Sandbox em Python sem usar a flag '-e'
     cat /tmp/f60k | /opt/ctf/restricted_shell.py 2>&1 | nc -l -p 60000 > /tmp/f60k
