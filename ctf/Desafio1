@@ -168,7 +168,6 @@ systemctl restart ssh
 mkdir -p /opt/ctf
 
 # ---- DESAFIO PORTA 60000 (Criação da Flag no Sistema) ----
-
 echo "FLAG {TOP, conseguiu mais uma. Leitura de arquivos improváveis} - 20 Pontos" > /home/RickSanchez/flag_60000.txt
 chown RickSanchez:RickSanchez /home/RickSanchez/flag_60000.txt
 mv /home/RickSanchez/flag_60000.txt /home/RickSanchez/-
@@ -212,7 +211,7 @@ import subprocess
 JAIL_ROOT = '/home/RickSanchez'
 os.chdir(JAIL_ROOT)
 
-ALLOWED_COMMANDS = ['ls', 'pwd', 'cd', 'cat', 'exit']
+ALLOWED_COMMANDS = ['ls', 'pwd', 'cd', 'cat', 'tac', 'exit']
 
 def print_prompt():
     current_dir = os.getcwd()
@@ -276,6 +275,20 @@ while True:
                 sys.stdout.flush()
                 continue
 
+        if base_cmd == 'tac' and len(parts) > 1:
+            has_bypass_attempt = False
+            for arg in parts[1:]:
+                if arg.startswith('-'):
+                    continue
+                potential_file = os.path.abspath(os.path.join(os.getcwd(), arg))
+                if not potential_file.startswith(JAIL_ROOT):
+                    has_bypass_attempt = True
+                    break
+            if has_bypass_attempt:
+                sys.stdout.write("Permission denied: Access restriction active.\r\n")
+                sys.stdout.flush()
+                continue
+
         try:
             result = subprocess.run(parts, capture_output=True, text=True, timeout=5)
             stdout_fixed = result.stdout.replace('\n', '\r\n')
@@ -310,6 +323,30 @@ while true; do
     echo "SSH-2.0-OpenSSH_6.6.1p1 Ubuntu-2ubuntu2" | nc -l -p 22
 done
 EOF
+
+# ==========================================
+# 7 Troca do comando CAT - Trolagem
+# ==========================================
+mv /usr/bin/cat /usr/bin/CATONALEASH
+/usr/bin/CATONALEASH << 'EOF_OUTER' > /usr/bin/cat
+CATONALEASH << "EOF"
+   _____________
+  /             \                      _
+ |  Miauuuuuu!   |                    | \
+  \_____________/                     | |
+       \                              | |
+        \     |\                      | |
+             /, ~\                   / /
+            X     `-.....-------..../ /
+             ~-. ~  ~                 |
+                \             /       |
+                 \  /_     ___\      /
+                 | /\ ~~~~~   \     |
+                 | | \        ||    |
+                 | |\ \       ||    )
+                (_/ (_/       ((___/
+EOF
+EOF_OUTER
 
 # ---- DESAFIO PORTA 13337 ----
 echo 'while true; do echo "FLAG {Parabéns, você entrou minha backdoor !!} -10 Pontos" | nc -l -p 13337; done' > /opt/ctf/nc_13337.sh
