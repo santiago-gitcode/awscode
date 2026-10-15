@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==============================================================================
-# Script de Provisionamento - Réplica RickdiculouslyEasy para Debian (EC2)
+# Script de Provisionamento - RickdiculouslyEasy para Debian (EC2)
 # ==============================================================================
 
 export DEBIAN_FRONTEND=noninteractive
