@@ -93,27 +93,30 @@ else
 # ==============================================================================
 # CONFIGURAÇÃO DO USER DATA DINÂMICO (Compatível com o SHC)
 # ==============================================================================
-cat << EOF > /tmp/user_data_temp.sh
-#!/bin/bash
-apt-get update -y && apt-get install -y wget
-
-# Baixa o binário compilado do GitHub salvando temporariamente no /tmp
-wget --no-check-certificate -q $SCRIPT_PREPARACAO_URL -O /tmp/provisionamento
-
-# Dá permissão de execução e roda o binário nativamente
-chmod +x /tmp/provisionamento
-/tmp/provisionamento
-
-# Apaga o binário imediatamente após a execução para não deixar rastros na máquina
-rm -f /tmp/provisionamento
-EOF
-
-
-#   cat << EOF > /tmp/user_data_temp.sh
-#!/bin/bash
+#cat << EOF > /tmp/user_data_temp.sh
+##!/bin/bash
 #apt-get update -y && apt-get install -y wget
-#wget -qO- $SCRIPT_PREPARACAO_URL | bash
+#
+## Baixa o binário compilado do GitHub salvando temporariamente no /tmp
+#wget --no-check-certificate -q $SCRIPT_PREPARACAO_URL -O /tmp/provisionamento
+#
+## Dá permissão de execução e roda o binário nativamente
+##chmod +x /tmp/provisionamento
+##/tmp/provisionamento
+#
+## Apaga o binário imediatamente após a execução para não deixar rastros na máquina
+#rm -f /tmp/provisionamento
 #EOF
+
+# ==============================================================================
+# CONFIGURAÇÃO DO USER DATA DINÂMICO (sem o SHC)
+# ==============================================================================
+
+    cat << EOF > /tmp/user_data_temp.sh
+!/bin/bash
+apt-get update -y && apt-get install -y wget
+wget -qO- $SCRIPT_PREPARACAO_URL | bash
+EOF
 
     # 1. Lançar a instância injetando o User Data e capturar o Instance ID
     launch_output=$(aws ec2 run-instances \
