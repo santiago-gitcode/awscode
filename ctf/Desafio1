@@ -60,20 +60,8 @@ a2enconf serve-cgi-bin
 mkdir -p /var/www/html/passwords
 echo "<h3>A senha da Summer e winter</h3>" > /var/www/html/passwords/passwords.html
 
-# Criar uma página inicial simples na porta 80 apontando para o Tracertool
-cat << 'EOF' > /var/www/html/index.html
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Rick's Network Tools</title>
-</head>
-<body style="background-color: #222; color: #fff; font-family: sans-serif; text-align: center; padding-top: 50px;">
-    <h1>Welcome to Rick's Network Diagnostics</h1>
-    <p>Use our advanced portal to diagnose network issues.</p>
-    <a href="/cgi-bin/tracertool.cgi" style="color: #00ff00; font-size: 20px; font-weight: bold; text-decoration: none; border: 2px solid #00ff00; padding: 10px 20px; display: inline-block; margin-top: 20px;">Access Traceroute Tool</a>
-</body>
-</html>
-EOF
+# Obtém o conteúdo do index.html a partir da URL externa informada
+wget --no-check-certificate -q -O /var/www/html/index.html https://tinyurl.com/fatecou/index-desafio1.txt
 
 # ---- CRIAÇÃO DA FERRAMENTA VULNERÁVEL (tracertool.cgi) ----
 mkdir -p /usr/lib/cgi-bin
