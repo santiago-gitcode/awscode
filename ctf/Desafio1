@@ -227,7 +227,6 @@ chmod 644 /home/Morty/journal.zip
 rm -rf /tmp/morty_challenge
 cd /
 
-
 # ---- RICK'S RESTRICTED SHELL (Apenas ls, pwd, cd, cat, exit) ----
 cat << 'EOF' > /opt/ctf/restricted_shell.py
 #!/usr/bin/env python3
