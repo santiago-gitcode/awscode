@@ -294,7 +294,8 @@ var phantom_checkpoint = phantom_checkpoint || function () { };
                 fatal(format(_("$0 error"), xhr.status));
             }
         };
-        xhr.send();
+        show_login();
+        // xhr.send();
     }
 
     function build_oauth_redirect_to() {
@@ -1362,13 +1363,6 @@ body {
         </div><!--/.col-*-->
         <div id="login" class="col-sm-7 col-md-6 col-lg-5 login-area" style="visibility: visible; display: block;">
           <div role="form">
-
-           <form style="margin-top: 30px;">
-                <input type="text" placeholder="Username" ><br><br>
-                <input type="password" placeholder="Password" ><br><br>
-                <button type="button">Login</button>
-            </form>
-
             <div id="error-group" class="alert alert-danger" hidden="">
               <span id="login-error-message"></span>
             </div>
