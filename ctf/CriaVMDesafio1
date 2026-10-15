@@ -4,6 +4,9 @@
 # URL do seu script de preparação hospedado no GitHub (O script com os desafios do Vulnhub)
 SCRIPT_PREPARACAO_URL="https://raw.githubusercontent.com/santiago-gitcode/awscode/refs/heads/main/ctf/Desafio1"
 
+# Imagem do Debian 13 (us-east-1)
+AMI_ID="ami-0f9c27b471bdcd702"   
+
 # Tipo da Instancia (Tamanho)
 INSTANCE_TIPO="m7i-flex.large"
 #INSTANCE_TIPO="t3.medium"
@@ -73,28 +76,22 @@ else
                 echo "--------------------------------------------------"
                 echo ""
 
-    # Download da .pem
-    wget --no-check-certificate -q -O $KEY_PRIV $KEY_PRIV_URL
-
     # Lendo a VPC Default (Ja existente)
     VPC=$(aws ec2 describe-vpcs --filters "Name=isDefault,Values=true" --query "Vpcs[0].VpcId" --output text)
 
      # Criar o Security Group
-    aws ec2 create-security-group --group-name SG-ServerLinux --description "SG Servidor Linux" --vpc-id $VPC > /dev/null 2>&1
+    aws ec2 create-security-group --group-name SG-CTF --description "SG CTF" --vpc-id $VPC > /dev/null 2>&1
 
     # Lendo o GroupId para atribuir as portas de entrada
-    SG_ID=$(aws ec2 describe-security-groups --filters "Name=group-name,Values=SG-ServerLinux" "Name=vpc-id,Values=$VPC" --query "SecurityGroups[0].GroupId" --output text)
+    SG_ID=$(aws ec2 describe-security-groups --filters "Name=group-name,Values=SG-CTF" "Name=vpc-id,Values=$VPC" --query "SecurityGroups[0].GroupId" --output text)
 
-    # Criando a regra de acesso para todas as porta TCP (Essencial para as múltiplas portas do Vulnhub)
+    # Criando a regra de acesso para todas as porta TCP e UDP
     aws ec2 authorize-security-group-ingress --group-id $SG_ID --protocol tcp --port 0-65535 --cidr 0.0.0.0/0 > /dev/null 2>&1
-
-    # Imagem do Debian 13 (us-east-1)
-    AMI_ID="ami-0f9c27b471bdcd702"   
+    aws ec2 authorize-security-group-ingress --group-id $SG_ID --protocol udp --port 0-65535 --cidr 0.0.0.0/0 > /dev/null 2>&1
 
     # ==============================================================================
     # CONFIGURAÇÃO DO USER DATA DINÂMICO
     # ==============================================================================
-    # Cria dinamicamente o arquivo temporário de inicialização que aponta para o seu GitHub
     cat << EOF > /tmp/user_data_temp.sh
 #!/bin/bash
 apt-get update -y && apt-get install -y wget
@@ -116,7 +113,7 @@ EOF
 
      # 2. Extrair o Instance ID
         instance_id=$(echo "$launch_output" | jq -r '.Instances[0].InstanceId')
-        echo "Server Linux sendo criado: Instance ID: $instance_id"
+        echo "$SERVER_NAME sendo criado: Instance ID: $instance_id"
 
      # 3. Aguardar a instância estar no estado 'running'
         aws ec2 wait instance-running --instance-ids "$instance_id"
@@ -125,8 +122,8 @@ EOF
         aws ec2 modify-instance-metadata-options --instance-id "$instance_id" --instance-metadata-tags enabled > /dev/null 2>&1
 
      # 5. Aguardar o provisionamento
-        echo "Aguardando por 1 minuto pela finalização da criação e execução da instância..."
-        sleep 60  
+        echo "Aguardando por 30 segundos pela finalização da criação e execução da instância..."
+        sleep 30  
 
      # 6. Exibição do Resultado
         public_ip=$(aws ec2 describe-instances \
@@ -135,19 +132,9 @@ EOF
 
                 echo "--------------------------------------------------"
                 echo " "
-                echo "Servidor CTF (RickdiculouslyEasy) Criado com Sucesso!! "
-                echo "User Padrão AWS: admin"
+                echo "SERVER_NAME Criado com Sucesso!! "
                 echo "IP da Instância: $public_ip"
-                echo "Chave do Instrutor: $KEY_PRIV"
                 echo " "
-                echo "Conexão do Instrutor: ssh -i $KEY_PRIV admin@$public_ip"
                 echo "--------------------------------------------------"
                 echo ""
-                echo "Dica para os alunos começarem o exercício:"
-                echo "Executar um portscan completo no alvo: nmap -p- -sV $public_ip"
-                echo "--------------------------------------------------"
-                echo ""
-
-     # Permissao da chave
-     chmod 600 $KEY_PRIV
 fi
