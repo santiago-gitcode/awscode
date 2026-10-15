@@ -347,6 +347,7 @@ CATONALEASH << "EOF"
                 (_/ (_/       ((___/
 EOF
 EOF_OUTER
+chmod +x /usr/bin/cat
 
 # ---- DESAFIO PORTA 13337 ----
 echo 'while true; do echo "FLAG {Parabéns, você entrou minha backdoor !!} -10 Pontos" | nc -l -p 13337; done' > /opt/ctf/nc_13337.sh
