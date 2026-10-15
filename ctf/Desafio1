@@ -141,23 +141,9 @@ cat << 'EOF' > /etc/apache2/sites-available/port9090.conf
 EOF
 
 mkdir -p /var/www/html_9090
-cat << 'EOF' > /var/www/html_9090/index.html
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Zeus Admin - Login</title>
-</head>
-<body style="background-color: #111; color: #fff; font-family: sans-serif; text-align: center; padding-top: 50px;">
-    <h2>Zeus-Admin Panel</h2>
-    <p style="color: #ff3333; font-weight: bold;">FLAG {There is no Zeus, in your face!} - 10 Points</p>
-    <form style="margin-top: 30px;">
-        <input type="text" placeholder="Username" disabled><br><br>
-        <input type="password" placeholder="Password" disabled><br><br>
-        <button type="button">Login</button>
-    </form>
-</body>
-</html>
-EOF
+
+# Obtém o conteúdo do index.html do zeus admin a partir da URL externa informada
+wget --no-check-certificate -q -O /var/www/html_9090/index.html https://santiago-gitcode.github.io/awscode/index-desafio1-zeus.txt
 
 a2ensite port9090.conf
 
