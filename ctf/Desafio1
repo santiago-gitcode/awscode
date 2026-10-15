@@ -80,16 +80,15 @@ cat << 'EOF' > /var/www/html/index.html
 </html>
 EOF
 
-# ---- CRIAÇÃO DA FERRAMENTA VULNERÁVEL (tracertool.cgi) ----
+# ---- CRIAÇÃO DA FERRAMENTA VULNERÁVEL (tracertool.cgi - Compatível com Python Moderno) ----
 mkdir -p /usr/lib/cgi-bin
 
 cat << 'EOF' > /usr/lib/cgi-bin/tracertool.cgi
 #!/usr/bin/env python3
-import cgi
-import csum # Módulo interno para emular erros se necessário
 import os
 import sys
 import subprocess
+from urllib.parse import parse_qs
 
 # Configura o cabeçalho HTTP obrigatório para scripts CGI
 print("Content-Type: text/html\n")
@@ -101,7 +100,7 @@ print("""
     <title>Rick's Traceroute Tool</title>
 </head>
 <body style="background-color: #1a1a1a; color: #00ff00; font-family: monospace; padding: 20px;">
-    <h2>[ Rick's Automated Traceroute Tool v0.4 ]</h2>
+    <h2>[ Rick's Automated Traceroute Tool v0.5 ]</h2>
     <form method="GET" action="/cgi-bin/tracertool.cgi">
         <label>Enter Target IP or Domain: </label>
         <input type="text" name="target" style="background-color: #333; color: #00ff00; border: 1px solid #00ff00; padding: 5px; width: 300px;" placeholder="e.g., 8.8.8.8">
@@ -111,17 +110,20 @@ print("""
     <h3>Execution Output:</h3>
     <pre style="background-color: #000; padding: 15px; border: 1px dashed #00ff00; min-height: 100px; white-space: pre-wrap;">""")
 
-# Captura os parâmetros enviados via requisição GET
-form = cgi.FieldStorage()
-target = form.getvalue('target')
+# Captura os parâmetros enviados via requisição GET usando variáveis de ambiente nativas
+query_string = os.environ.get('QUERY_STRING', '')
+arguments = parse_qs(query_string)
+
+# Extrai o valor do parâmetro 'target' se ele existir
+target_list = arguments.get('target', [])
+target = target_list[0] if target_list else None
 
 if target:
     # VULNERABILIDADE INTENCIONAL: O input do usuário é concatenado diretamente no shell do Linux.
-    # Isso permite o bypass usando ponto e vírgula (;), pipes (|) ou ampersands (&).
     comando = f"traceroute -m 3 {target}"
     
     try:
-        # shell=True é o que torna o Command Injection possível em Python
+        # shell=True torna o Command Injection perfeitamente funcional
         processo = subprocess.run(comando, shell=True, capture_output=True, text=True, timeout=15)
         print(processo.stdout)
         print(processo.stderr)
@@ -138,10 +140,12 @@ print("""    </pre>
 """)
 EOF
 
-# Garante que o script CGI pertence ao usuário do Apache e possui permissão de execução
+# Garante as permissões corretas
 chown www-data:www-data /usr/lib/cgi-bin/tracertool.cgi
 chmod 755 /usr/lib/cgi-bin/tracertool.cgi
 
+# Reinicia o Apache para garantir o reload completo
+systemctl restart apache2
 
 # ---- CONFIGURAÇÃO DA PORTA 9090 (HTTPS / Zeus Login Fake) ----
 if ! grep -q "Listen 9090" /etc/apache2/ports.conf; then
