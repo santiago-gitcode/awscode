@@ -41,7 +41,7 @@ chown root:root /srv/ftp
 chmod 755 /srv/ftp
 
 # 5. Criar a Flag dentro da pasta (permissão de leitura pública)
-echo "FLAG{FTP_RICK_FLAG_FOUND}" > /srv/ftp/flag.txt
+echo "FLAG{Eita, Temos um FTP com acesso anônimo ativado. :(  } - 10 Pontos" > /srv/ftp/flag.txt
 chown root:root /srv/ftp/flag.txt
 chmod 644 /srv/ftp/flag.txt
 
@@ -169,8 +169,9 @@ mkdir -p /opt/ctf
 
 # ---- DESAFIO PORTA 60000 (Criação da Flag no Sistema) ----
 
-echo "FLAG {Welcome_to_the_real_world} - 20 Points" > /home/RickSanchez/flag_60000.txt
+echo "FLAG {TOP, conseguiu mais uma. Leitura de arquivos improváveis} - 20 Pontos" > /home/RickSanchez/flag_60000.txt
 chown RickSanchez:RickSanchez /home/RickSanchez/flag_60000.txt
+mv /home/RickSanchez/flag_60000.txt /home/RickSanchez/-
 
 # ---- DESAFIO DO ARQUIVO ZIP CRIPTOGRAFADO (Home do Morty) ----
 # 1. Instalar o utilitário zip caso não esteja presente (essencial para criar o desafio)
@@ -219,6 +220,7 @@ def print_prompt():
     sys.stdout.flush()
 
 sys.stdout.write("=== RICK'S SECURE TERMINAL v1.0 ===\r\n")
+sys.stdout.write("Aparentemente não tem nada. Mas será mesmo?\r\n")
 sys.stdout.flush()
 
 while True:
@@ -310,7 +312,7 @@ done
 EOF
 
 # ---- DESAFIO PORTA 13337 ----
-echo 'while true; do echo "FLAG{NETCAT_13337_EASY_FLAG}" | nc -l -p 13337; done' > /opt/ctf/nc_13337.sh
+echo 'while true; do echo "FLAG {Parabéns, você entrou minha backdoor !!} -10 Pontos" | nc -l -p 13337; done' > /opt/ctf/nc_13337.sh
 
 # Dar permissão e executar todos os listeners em background desvinculados do terminal
 chmod +x /opt/ctf/*.sh
