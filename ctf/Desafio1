@@ -325,7 +325,8 @@ while True:
             sys.stdout.write(stdout_fixed)
             sys.stdout.write(stderr_fixed)
         except Exception as e:
-            sys.stdout.write(f"Execution error: {str(e)}\r\n")
+            error_msg = str(e).replace('CATONALEASH', 'cat')
+            sys.stdout.write(f"Execution error: {error_msg}\r\n")
         sys.stdout.flush()
     except KeyboardInterrupt:
         sys.stdout.write("\r\nUse exit to leave.\r\n")
