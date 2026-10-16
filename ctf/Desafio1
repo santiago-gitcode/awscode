@@ -91,6 +91,7 @@ EOF
 wget --no-check-certificate -q -O /var/www/html/index.html https://santiago-gitcode.github.io/awscode/index-desafio1.txt
 
 # Gerando o robots.txt
+echo "AddDefaultCharset UTF-8" > /var/www/html/.htaccess
 cat << 'EOF' > /var/www/html/robots.txt
 # Onde os motores de busca fecham os olhos, a sua busca pela flag apenas começou. :)
 
