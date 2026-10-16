@@ -58,10 +58,45 @@ a2enconf serve-cgi-bin
 
 # ---- CONFIGURAÇÃO DA PORTA 80 (HTTP Padrão) ----
 mkdir -p /var/www/html/passwords
-echo "<h3>A senha da Summer e winter</h3>" > /var/www/html/passwords/passwords.html
+echo "FLAG{Simples, não deixe senhas em diretório públicos} - 10 Pontos" > /var/www/html/passwords/FLAG.txt
+
+cat << 'EOF' > /var/www/html/passwords/passwords.html
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Perdido</title>
+    <script>
+        document.addEventListener('contextmenu', event => event.preventDefault());
+
+        document.onkeydown = function(e) {
+            if(e.keyCode == 123) { return false; } 
+            if(e.ctrlKey && e.shiftKey && e.keyCode == 'I'.charCodeAt(0)) { return false; }   
+            if(e.ctrlKey && e.shiftKey && e.keyCode == 'J'.charCodeAt(0)) { return false; }      
+            if(e.ctrlKey && e.shiftKey && e.keyCode == 'C'.charCodeAt(0)) { return false; }
+            if(e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) { return false; }
+        }
+    </script>
+</head>
+<body>
+    <p>Aparentemente não tem nada aqui. Porém eu olharia com um pouco mais de atenção :)</p>
+    
+    <!-- apagar isso depois. A senha que estou usando: winter -->
+</body>
+</html>
+EOF
 
 # Obtém o conteúdo do index.html a partir da URL externa informada
 wget --no-check-certificate -q -O /var/www/html/index.html https://santiago-gitcode.github.io/awscode/index-desafio1.txt
+
+# Gerando o robots.txt
+cat << 'EOF' > /var/www/html/robots.txt
+# Onde os motores de busca fecham os olhos, a sua busca pela flag apenas começou. :)
+
+/cgi-bin/root_shell.cgi
+/cgi-bin/tracertool.cgi
+/cgi-bin/*
+EOF
 
 # ---- CRIAÇÃO DA FERRAMENTA VULNERÁVEL (tracertool.cgi) ----
 mkdir -p /usr/lib/cgi-bin
