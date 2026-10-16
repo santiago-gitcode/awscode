@@ -58,6 +58,7 @@ a2enconf serve-cgi-bin
 
 # ---- CONFIGURAÇÃO DA PORTA 80 (HTTP Padrão) ----
 mkdir -p /var/www/html/passwords
+echo "AddDefaultCharset UTF-8" > /var/www/html/passwords/.htaccess
 echo "FLAG{Simples, não deixe senhas em diretório públicos} - 10 Pontos" > /var/www/html/passwords/FLAG.txt
 
 cat << 'EOF' > /var/www/html/passwords/passwords.html
@@ -79,7 +80,7 @@ cat << 'EOF' > /var/www/html/passwords/passwords.html
     </script>
 </head>
 <body>
-    <p>Aparentemente não tem nada aqui. Porém eu olharia com um pouco mais de atenção :)</p>
+    <p>Nada para ver aqui... pelo menos para quem só usa o botão esquerdo do mouse. :)</p>
     
     <!-- APAGAR ISSO DEPOIS. A senha que estou usando: winter -->
 </body>
