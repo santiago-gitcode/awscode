@@ -11,16 +11,24 @@ apt-get install -y apache2 vsftpd openssh-server netcat-openbsd python3 curl unz
 
 # 2. CRIAÇÃO DE USUÁRIOS COM HASHES SHA-512 
 # Senha da Summer: winter
-useradd -m -s /bin/bash -p '$6$vU7x9K2p$ZqREb9mU7Sg8Z0X8y8T2W9C4vNslLi4rU7e8w9a0b1c2d3e4f5g6h7i8j9k0l1m2n3o4p5q6r7s8t9u0v1w2x3y4z5' Summer
+useradd -m -s /bin/bash -p '$y$j9T$OvtMS3NYprB8TwNXZVVx51$QZtuGJCSxqreDamGSX0hFELhRtHiziSolxAeOqYH498' Summer
 
 # Senha do RickSanchez: P7Curtains
-useradd -m -s /bin/bash -p '$6$r1ck54nc$H3zMoRtY7fGxbK4T9u1C8vNsM2oV5xL6c4c0v1z8y9z0a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0' RickSanchez
+useradd -m -s /bin/bash -p '$y$j9T$DNN.oqO4SCbuY2QbZ1vnm0$BAOidPbR1MJXpTet8Z4hBVBHSlkyLbcTpVhfrmQjhL4' RickSanchez
 
 # Usuário Morty (geralmente descoberto por outros vetores)
 useradd -m -s /bin/bash Morty
 
 # Adicionar RickSanchez ao grupo sudoers (com privilégios de root)
 echo "RickSanchez ALL=(ALL:ALL) ALL" >> /etc/sudoers
+
+# 5. Criar a Flag do usuário Summer
+echo "FLAG{Previsibilidade é o maior inimigo da seguranca} - 10 Pontos" > /home/Summer/FLAG.txt
+chown Summer:Summer /home/Summer/FLAG.txt
+chmod 640 /home/Summer/FLAG.txt
+
+
+FLAG{The opposite of summer is winter!} - 10 Points
 
 # ==========================================
 # 3. CONFIGURAÇÃO DO SERVIÇO FTP (Porta 21)
@@ -303,6 +311,8 @@ systemctl restart apache2
 # 5. CONFIGURAÇÃO DO SSH REAL (Apenas Porta 22222)
 # ==========================================
 sed -i 's/^#\?Port .*/Port 22222/' /etc/ssh/sshd_config
+sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config
+
 systemctl restart ssh
 
 # ==========================================
