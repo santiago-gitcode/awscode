@@ -211,11 +211,11 @@ import subprocess
 JAIL_ROOT = '/home/RickSanchez'
 os.chdir(JAIL_ROOT)
 
-ALLOWED_COMMANDS = ['ls', 'pwd', 'cd', 'cat', 'tac', 'exit']
+ALLOWED_COMMANDS = ['ls', 'pwd', 'cd', 'cat', 'tac', 'exit', 'quit']
 
 def print_prompt():
     current_dir = os.getcwd()
-    sys.stdout.write(f"\r\nrick-shell:{current_dir}$ ")
+    sys.stdout.write(f"rick-shell:{current_dir}$ ")
     sys.stdout.flush()
 
 sys.stdout.write("=== RICK'S SECURE TERMINAL v1.0 ===\r\n")
@@ -228,7 +228,7 @@ while True:
         user_input = sys.stdin.readline()
         if not user_input:
             break
-        cmd_line = user_input.strip()
+        cmd_line = user_input.replace('\r', '').replace('\n', '').strip()
         if not cmd_line:
             continue
         parts = cmd_line.split()
@@ -247,6 +247,12 @@ while True:
         if base_cmd == 'exit':
             sys.stdout.write("Goodbye!\r\n")
             sys.stdout.flush()
+            break
+
+        if base_cmd == 'quit':
+            sys.stdout.write("Goodbye!\r\n")
+            sys.stdout.flush()
+            base_cmd = 'exit'
             break
 
         if base_cmd == 'cd':
@@ -330,7 +336,7 @@ chmod +x /opt/ctf/restricted_shell.py
 # ---- SCRIPT DO SOCAT para o shell da porta 60000 ----
 cat << 'EOF' > /opt/ctf/nc_60000.sh
 #!/bin/bash
-socat TCP-LISTEN:60000,reuseaddr,fork EXEC:"/opt/ctf/restricted_shell.py",pty,stderr,echo=0
+socat TCP-LISTEN:60000,reuseaddr,fork EXEC:"/opt/ctf/restricted_shell.py",pty,raw,echo=0
 EOF
 
 chmod +x /opt/ctf/nc_60000.sh
@@ -370,10 +376,10 @@ CATONALEASH << "EOF"
              ~-. ~  ~                 |
                 \             /       |
                  \  /_     ___\      /
-                 | /\ ~~~~~   \     |
-                 | | \        ||    |
-                 | |\ \       ||    )
-                (_/ (_/       ((___/
+                 | /\ ~~~~~   \     /
+                 | | \        ||   |
+                 | |\ \       ||   )
+                (_/ (_/       ((__/
 EOF
 EOF_OUTER
 chmod +x /usr/bin/cat
