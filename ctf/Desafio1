@@ -287,20 +287,22 @@ while True:
                 sys.stdout.flush()
                 continue
 
-        if base_cmd == 'cat' and len(parts) > 1:
-            base_cmd = 'CATONALEASH'
-            has_bypass_attempt = False
-            for arg in parts[1:]:
-                if arg.startswith('-'):
+        if base_cmd == 'cat':
+            parts[0] = 'CATONALEASH' 
+            
+            if len(parts) > 1:
+                has_bypass_attempt = False
+                for arg in parts[1:]:
+                    if arg.startswith('-'):
+                        continue
+                    potential_file = os.path.abspath(os.path.join(os.getcwd(), arg))
+                    if not potential_file.startswith(JAIL_ROOT):
+                        has_bypass_attempt = True
+                        break
+                if has_bypass_attempt:
+                    sys.stdout.write("Permission denied: Access restriction active.\r\n")
+                    sys.stdout.flush()
                     continue
-                potential_file = os.path.abspath(os.path.join(os.getcwd(), arg))
-                if not potential_file.startswith(JAIL_ROOT):
-                    has_bypass_attempt = True
-                    break
-            if has_bypass_attempt:
-                sys.stdout.write("Permission denied: Access restriction active.\r\n")
-                sys.stdout.flush()
-                continue
 
         if base_cmd == 'tac' and len(parts) > 1:
             has_bypass_attempt = False
