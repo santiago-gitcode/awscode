@@ -20,7 +20,7 @@ useradd -m -s /bin/bash -p '$y$j9T$DNN.oqO4SCbuY2QbZ1vnm0$BAOidPbR1MJXpTet8Z4hBV
 useradd -m -s /bin/bash Morty
 
 # Incluir a imagem do Morty com Steganografia e permissão do Summer para acesso
-wget -q -O /home/Morty/Safe_Password.jpg "https://raw.githubusercontent.com/SEU_USUARIO/SEU_REPO/main/imagem.jpg"
+wget -q -O /home/Morty/Safe_Password.jpg "https://raw.githubusercontent.com/santiago-gitcode/awscode/refs/heads/main/ctf/Image_Morty.jpg"
 
 chown Morty:Morty /home/Morty/Safe_Password.jpg
 chmod 640 /home/Morty/Safe_Password.jpg
