@@ -7,7 +7,7 @@ export DEBIAN_FRONTEND=noninteractive
 
 # 1. ATUALIZAÇÃO DO SISTEMA E INSTALAÇÃO DOS SERVIÇOS
 apt-get update -y
-apt-get install -y apache2 vsftpd openssh-server netcat-openbsd python3 curl unzip traceroute
+apt-get install -y apache2 vsftpd openssh-server netcat-openbsd python3 curl unzip traceroute socat
 
 # 2. CRIAÇÃO DE USUÁRIOS COM HASHES SHA-512 
 # Senha da Summer: winter
@@ -260,7 +260,27 @@ while True:
             else:
                 sys.stdout.write("Permission denied: You cannot leave Rick's home directory!\r\n")
             continue
+
+        if base_cmd == 'ls' and len(parts) > 1:
+            has_bypass_attempt = False
+            for arg in parts[1:]:
+                # Ignora flags como -all, -l, -a
+                if arg.startswith('-'):
+                    continue
+                
+                # Resolve o caminho absoluto do diretório/arquivo solicitado
+                potential_dir = os.path.abspath(os.path.join(os.getcwd(), arg))
+                
+                # Verifica se o alvo está fora do JAIL_ROOT
+                if not potential_dir.startswith(JAIL_ROOT):
+                    has_bypass_attempt = True
+                    break
             
+            if has_bypass_attempt:
+                sys.stdout.write("Permission denied: You cannot list directories outside Rick's home!\r\n")
+                sys.stdout.flush()
+                continue
+
         if base_cmd == 'cat' and len(parts) > 1:
             has_bypass_attempt = False
             for arg in parts[1:]:
@@ -307,15 +327,23 @@ EOF
 
 chmod +x /opt/ctf/restricted_shell.py
 
-# ---- SCRIPT DO NETCAT COMPATÍVEL COM DEBIAN (Sem a flag -e) ----
+# ---- SCRIPT DO SOCAT para o shell da porta 60000 ----
 cat << 'EOF' > /opt/ctf/nc_60000.sh
 #!/bin/bash
-rm -f /tmp/f60k; mkfifo /tmp/f60k
-while true; do
-    CATONALEASH /tmp/f60k | /opt/ctf/restricted_shell.py 2>&1 | nc -l -p 60000 > /tmp/f60k
-    sleep 1
-done
+socat TCP-LISTEN:60000,reuseaddr,fork EXEC:"/opt/ctf/restricted_shell.py",pty,stderr,echo=0
 EOF
+
+chmod +x /opt/ctf/nc_60000.sh
+
+# ---- SCRIPT DO NETCAT COMPATÍVEL COM DEBIAN (Sem a flag -e) ----
+#cat << 'EOF' > /opt/ctf/nc_60000.sh
+##!/bin/bash
+#rm -f /tmp/f60k; mkfifo /tmp/f60k
+#while true; do
+#    CATONALEASH /tmp/f60k | /opt/ctf/restricted_shell.py 2>&1 | nc -l -p 60000 > /tmp/f60k
+#    sleep 1
+#done
+#EOF
 
 # ---- DESAFIO PORTA 22 (SSH FAKE) ----
 cat << 'EOF' > /opt/ctf/ssh_fake.sh
@@ -329,6 +357,7 @@ EOF
 # ==========================================
 mv /usr/bin/cat /usr/bin/CATONALEASH
 /usr/bin/CATONALEASH << 'EOF_OUTER' > /usr/bin/cat
+#!/bin/bash
 CATONALEASH << "EOF"
    _____________
   /             \                      _
