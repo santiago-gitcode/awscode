@@ -81,7 +81,7 @@ cat << 'EOF' > /var/www/html/passwords/passwords.html
 <body>
     <p>Aparentemente não tem nada aqui. Porém eu olharia com um pouco mais de atenção :)</p>
     
-    <!-- apagar isso depois. A senha que estou usando: winter -->
+    <!-- APAGAR ISSO DEPOIS. A senha que estou usando: winter -->
 </body>
 </html>
 EOF
