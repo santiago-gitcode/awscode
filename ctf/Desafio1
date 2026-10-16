@@ -19,13 +19,24 @@ useradd -m -s /bin/bash -p '$y$j9T$DNN.oqO4SCbuY2QbZ1vnm0$BAOidPbR1MJXpTet8Z4hBV
 # Usuário Morty (geralmente descoberto por outros vetores)
 useradd -m -s /bin/bash Morty
 
+# Incluir a imagem do Morty com Steganografia e permissão do Summer para acesso
+wget -q -O /home/Morty/Safe_Password.jpg "https://raw.githubusercontent.com/SEU_USUARIO/SEU_REPO/main/imagem.jpg"
+
+chown Morty:Morty /home/Morty/Safe_Password.jpg
+chmod 640 /home/Morty/Safe_Password.jpg
+usermod -aG Morty Summer
+chmod 750 /home/Morty
+
 # Adicionar RickSanchez ao grupo sudoers (com privilégios de root)
 echo "RickSanchez ALL=(ALL:ALL) ALL" >> /etc/sudoers
 
-# 5. Criar a Flag do usuário Summer
-echo "FLAG{Previsibilidade é o maior inimigo da seguranca} - 10 Pontos" > /home/Summer/FLAG.txt
+# Criar a Flag do usuário Summer
+echo "FLAG{Previsibilidade é o maior inimigo da segurança} - 10 Pontos" > /home/Summer/FLAG.txt
 chown Summer:Summer /home/Summer/FLAG.txt
 chmod 640 /home/Summer/FLAG.txt
+
+
+
 
 # ==========================================
 # 3. CONFIGURAÇÃO DO SERVIÇO FTP (Porta 21)
