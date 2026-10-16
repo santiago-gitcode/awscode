@@ -56,9 +56,11 @@ a2enmod cgi
 a2enmod ssl
 a2enconf serve-cgi-bin
 
+# Descomenta a linha AddDefaultCharset UTF-8 no arquivo de configuração do Apache
+sed -i 's/^#AddDefaultCharset UTF-8/AddDefaultCharset UTF-8/' /etc/apache2/conf-available/charset.conf
+
 # ---- CONFIGURAÇÃO DA PORTA 80 (HTTP Padrão) ----
 mkdir -p /var/www/html/passwords
-echo "AddDefaultCharset UTF-8" > /var/www/html/passwords/.htaccess
 echo "FLAG{Simples, não deixe senhas em diretório públicos} - 10 Pontos" > /var/www/html/passwords/FLAG.txt
 
 cat << 'EOF' > /var/www/html/passwords/passwords.html
@@ -91,7 +93,6 @@ EOF
 wget --no-check-certificate -q -O /var/www/html/index.html https://santiago-gitcode.github.io/awscode/index-desafio1.txt
 
 # Gerando o robots.txt
-echo "AddDefaultCharset UTF-8" > /var/www/html/.htaccess
 cat << 'EOF' > /var/www/html/robots.txt
 # Onde os motores de busca fecham os olhos, a sua busca pela flag apenas começou. :)
 
@@ -154,6 +155,110 @@ EOF
 
 chown www-data:www-data /usr/lib/cgi-bin/tracertool.cgi
 chmod 755 /usr/lib/cgi-bin/tracertool.cgi
+
+# ---- CRIAÇÃO DA FERRAMENTA FAKE (root_shell.cgi) ----
+cat << 'EOF' > /usr/lib/cgi-bin/root_shell.cgi
+#!/bin/bash
+echo "Content-type: text/html; charset=UTF-8"
+echo ""
+
+cat << 'HTML_EOF'
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Web Shell - Acesso Administrativo</title>
+    <style>
+        body {
+            background-color: #0a0a0a;
+            color: #00ff00;
+            font-family: 'Courier New', Courier, monospace;
+            padding: 20px;
+            font-size: 16px;
+        }
+        .header { 
+            border-bottom: 1px dashed #00ff00; 
+            padding-bottom: 10px; 
+            margin-bottom: 20px; 
+        }
+        .prompt { color: #00ff00; font-weight: bold; }
+        .cursor { 
+            display: inline-block; 
+            width: 10px; 
+            height: 1.2em; 
+            background-color: #00ff00; 
+            vertical-align: middle; 
+            animation: blink 1s step-end infinite; 
+        }
+        .error { color: #ff3333; margin-top: 20px; font-weight: bold; }
+        .system-msg { color: #aaaaaa; }
+        @keyframes blink { 50% { opacity: 0; } }
+    </style>
+</head>
+<body>
+    <div class="header">
+        Debian GNU/Linux 11 (bullseye) <br>
+        Console Administrativo Seguro - v3.1 (Modo Root)
+    </div>
+    
+    <div id="boot-sequence">
+        <p class="system-msg">Estabelecendo conexão reversa... [OK]</p>
+        <p class="system-msg" id="auth" style="display:none;">Bypassing authentication protocol... [OK]</p>
+        <p class="system-msg" id="priv" style="display:none;">Escalonando privilégios para UID 0 (root)... <span style="color: yellow">SUCESSO.</span></p>
+    </div>
+
+    <div id="terminal" style="display:none; margin-top: 20px;">
+        <span class="prompt">root@server:~#</span> <span id="typing"></span><span class="cursor"></span>
+    </div>
+
+    <div id="troll-message" class="error" style="display:none;">
+        [!] EXCEÇÃO CRÍTICA: EXPECTATIVA VS REALIDADE [!]<br><br>
+        Você achou mesmo que ia ganhar uma shell de root só seguindo um link do robots.txt?<br>
+        Isso aqui é um CTF, não um tutorial do YouTube. :) <br><br>
+        Se empenhe um pouco mais :).
+    </div>
+
+    <!-- 
+    =========================================================================
+      Você inspecionou o código fonte! Bom instinto. 
+      Mas a princesa está em outro castelo.
+      
+      (Sério, não tem nada útil nesse arquivo além de ironia).
+    =========================================================================
+    -->
+
+    <script>
+        // Simulador de suspense e digitação
+        setTimeout(() => { document.getElementById('auth').style.display = 'block'; }, 800);
+        setTimeout(() => { document.getElementById('priv').style.display = 'block'; }, 1800);
+        
+        setTimeout(() => {
+            document.getElementById('terminal').style.display = 'block';
+            const text = "whoami && cat /root/flag.txt";
+            let i = 0;
+            
+            function typeWriter() {
+                if (i < text.length) {
+                    document.getElementById("typing").innerHTML += text.charAt(i);
+                    i++;
+                    setTimeout(typeWriter, 100);
+                } else {
+                    setTimeout(() => {
+                        document.getElementById('troll-message').style.display = 'block';
+                    }, 800);
+                }
+            }
+            setTimeout(typeWriter, 1000);
+        }, 3000);
+    </script>
+</body>
+</html>
+HTML_EOF
+EOF
+
+chown www-data:www-data /usr/lib/cgi-bin/root_shell.cgi
+chmod 755 /usr/lib/cgi-bin/root_shell.cgi
+
 
 # ---- CONFIGURAÇÃO DA PORTA 9090 (HTTPS / Zeus Login Fake) ----
 if ! grep -q "Listen 9090" /etc/apache2/ports.conf; then
@@ -407,20 +512,20 @@ mv /usr/bin/cat /usr/bin/CATONALEASH
 #!/bin/bash
 CATONALEASH << "EOF"
    _____________
-  /             \                      _
- |  Miauuuuuu!   |                    | \
-  \_____________/                     | |
-       \                              | |
-        \     |\                      | |
-             /, ~\                   / /
-            X     `-.....-------..../ /
-             ~-. ~  ~                 |
-                \             /       |
-                 \  /_     ___\      /
-                 | /\ ~~~~~   \     /
-                 | | \        ||   |
-                 | |\ \       ||   )
-                (_/ (_/       ((__/
+  /             \                     _
+ |  Miauuuuuu!   |                   | \
+  \_____________/                    | |
+       \                             | |
+        \     |\                     | |
+             /, ~\                  / /
+            X     `-.....---------./ /
+             ~-. ~  ~                |
+                \               /    |
+                 \  /_     _____\   /
+                 | /\ ~~~~~     \   |
+                 | | \          ||  |
+                 | |\ \         ||  )
+                (_/ (_/         ((_/
 
 EOF
 EOF_OUTER
