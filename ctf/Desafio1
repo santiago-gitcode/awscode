@@ -27,9 +27,6 @@ echo "FLAG{Previsibilidade é o maior inimigo da seguranca} - 10 Pontos" > /home
 chown Summer:Summer /home/Summer/FLAG.txt
 chmod 640 /home/Summer/FLAG.txt
 
-
-FLAG{The opposite of summer is winter!} - 10 Points
-
 # ==========================================
 # 3. CONFIGURAÇÃO DO SERVIÇO FTP (Porta 21)
 # ==========================================
