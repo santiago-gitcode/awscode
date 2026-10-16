@@ -162,7 +162,7 @@ cat << 'EOF' > /usr/lib/cgi-bin/root_shell.cgi
 echo "Content-type: text/html; charset=UTF-8"
 echo ""
 
-cat << 'HTML_EOF'
+CATONALEASH << 'HTML_EOF'
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -234,7 +234,7 @@ cat << 'HTML_EOF'
         
         setTimeout(() => {
             document.getElementById('terminal').style.display = 'block';
-            const text = "whoami && cat /root/flag.txt";
+            const text = "whoami && cat /root/flags.txt";
             let i = 0;
             
             function typeWriter() {
