@@ -288,6 +288,7 @@ while True:
                 continue
 
         if base_cmd == 'cat' and len(parts) > 1:
+            base_cmd = 'CATONALEASH'
             has_bypass_attempt = False
             for arg in parts[1:]:
                 if arg.startswith('-'):
@@ -380,6 +381,7 @@ CATONALEASH << "EOF"
                  | | \        ||   |
                  | |\ \       ||   )
                 (_/ (_/       ((__/
+
 EOF
 EOF_OUTER
 chmod +x /usr/bin/cat
