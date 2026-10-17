@@ -24,10 +24,11 @@ useradd -m -s /bin/bash Jerry
 usermod -aG Jerry Summer
 chmod 750 /home/Jerry
 
-# Adicionar o Cofre na pasta RICKS_SAFE do home de EvilMorty
+# Adicionar o Cofre na pasta RICKS_SAFE do home de Jerry
 mkdir /home/Jerry/RICKS_SAFE
 wget -q -O /home/Jerry/RICKS_SAFE/cofre "https://raw.githubusercontent.com/santiago-gitcode/awscode/refs/heads/main/ctf/Cofre.bin"
 chmod 750 /home/Jerry/RICKS_SAFE/cofre
+chown Jerry:Jerry /home/Jerry/RICKS_SAFE/cofre
 
 # Incluir a imagem do Morty com Steganografia e permissão do Summer para acesso
 wget -q -O /home/Morty/Safe_Password.jpg "https://raw.githubusercontent.com/santiago-gitcode/awscode/refs/heads/main/ctf/Image_Morty.jpg"
@@ -45,8 +46,17 @@ echo "FLAG{Previsibilidade é o maior inimigo da segurança} - 10 Pontos" > /hom
 chown Summer:Summer /home/Summer/FLAG.txt
 chmod 640 /home/Summer/FLAG.txt
 
+# Adiconando a Flag final na pasta /root
+echo "FLAG{ROOT Comprometido. Servidor Complemente Invadido!} - 30 Pontos" > /root/FLAG.txt
+chown root:root /root/FLAG.txt
+chmod 600 /root/FLAG.txt
 
-
+# Ajustes copia da chave da conta admin para RickSanchez
+mkdir /home/RickSanchez/.ssh
+mv /home/admin/.ssh/authorized_keys /home/RickSanchez/.ssh
+chown -R RickSanchez:RickSanchez /home/RickSanchez/.ssh
+chmod -R 700 /home/RickSanchez/.ssh
+userdel -f -r admin
 
 # ==========================================
 # 3. CONFIGURAÇÃO DO SERVIÇO FTP (Porta 21)
