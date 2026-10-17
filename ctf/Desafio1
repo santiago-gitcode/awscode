@@ -53,10 +53,10 @@ chmod 600 /root/FLAG.txt
 
 # Ajustes copia da chave da conta admin para RickSanchez
 mkdir /home/RickSanchez/.ssh
-mv /home/admin/.ssh/authorized_keys /home/RickSanchez/.ssh
+cp /home/admin/.ssh/authorized_keys /home/RickSanchez/.ssh
 chown -R RickSanchez:RickSanchez /home/RickSanchez/.ssh
 chmod -R 700 /home/RickSanchez/.ssh
-userdel -f -r admin
+#userdel -f -r admin
 
 # ==========================================
 # 3. CONFIGURAÇÃO DO SERVIÇO FTP (Porta 21)
