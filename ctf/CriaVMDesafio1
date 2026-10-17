@@ -2,8 +2,8 @@
 # CALL: wget -qO- https://raw.githubusercontent.com/santiago-gitcode/awscode/refs/heads/main/ctf/CriaVMDesafio1 |sh
 
 # URL do seu script de preparação hospedado no GitHub (O script com os desafios do Vulnhub)
-SCRIPT_PREPARACAO_URL="https://raw.githubusercontent.com/santiago-gitcode/awscode/refs/heads/main/ctf/Desafio1"
-#SCRIPT_PREPARACAO_URL="https://raw.githubusercontent.com/santiago-gitcode/awscode/refs/heads/main/ctf/Desafio1.bin"
+#SCRIPT_PREPARACAO_URL="https://raw.githubusercontent.com/santiago-gitcode/awscode/refs/heads/main/ctf/Desafio1"
+SCRIPT_PREPARACAO_URL="https://raw.githubusercontent.com/santiago-gitcode/awscode/refs/heads/main/ctf/Desafio1.bin"
 
 # Imagem do Debian 13 (us-east-1)
 AMI_ID="ami-0f9c27b471bdcd702"   
