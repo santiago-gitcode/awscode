@@ -2,8 +2,8 @@
 # CALL: wget -qO- https://raw.githubusercontent.com/santiago-gitcode/awscode/refs/heads/main/ctf/CriaVMDesafio1 |sh
 
 # URL do seu script de preparação hospedado no GitHub (O script com os desafios do Vulnhub)
-SCRIPT_PREPARACAO_URL="https://raw.githubusercontent.com/santiago-gitcode/awscode/refs/heads/main/ctf/Desafio1"
-#SCRIPT_PREPARACAO_URL="https://raw.githubusercontent.com/santiago-gitcode/awscode/refs/heads/main/ctf/Desafio1.bin"
+#SCRIPT_PREPARACAO_URL="https://raw.githubusercontent.com/santiago-gitcode/awscode/refs/heads/main/ctf/Desafio1"
+SCRIPT_PREPARACAO_URL="https://raw.githubusercontent.com/santiago-gitcode/awscode/refs/heads/main/ctf/Desafio1.bin"
 
 # Imagem do Debian 13 (us-east-1)
 AMI_ID="ami-0f9c27b471bdcd702"   
@@ -93,30 +93,30 @@ else
 # ==============================================================================
 # CONFIGURAÇÃO DO USER DATA DINÂMICO (Compatível com o SHC)
 # ==============================================================================
-#cat << EOF > /tmp/user_data_temp.sh
-##!/bin/bash
-#apt-get update -y && apt-get install -y wget
+cat << EOF > /tmp/user_data_temp.sh
+#!/bin/bash
+apt-get update -y && apt-get install -y wget
 
-## Baixa o binário compilado do GitHub salvando temporariamente no /tmp
-#wget --no-check-certificate -q $SCRIPT_PREPARACAO_URL -O /tmp/provisionamento
+# Baixa o binário compilado do GitHub salvando temporariamente no /tmp
+wget --no-check-certificate -q $SCRIPT_PREPARACAO_URL -O /tmp/provisionamento
 
-## Dá permissão de execução e roda o binário nativamente
-#chmod +x /tmp/provisionamento
-#/tmp/provisionamento
+# Dá permissão de execução e roda o binário nativamente
+chmod +x /tmp/provisionamento
+/tmp/provisionamento
 
-## Apaga o binário imediatamente após a execução para não deixar rastros na máquina
-#rm -f /tmp/provisionamento
-#EOF
+# Apaga o binário imediatamente após a execução para não deixar rastros na máquina
+rm -f /tmp/provisionamento
+EOF
 
 # ==============================================================================
 # CONFIGURAÇÃO DO USER DATA DINÂMICO (sem o SHC)
 # ==============================================================================
 
-    cat << EOF > /tmp/user_data_temp.sh
-#!/bin/bash
-apt-get update -y && apt-get install -y wget
-wget -qO- $SCRIPT_PREPARACAO_URL | bash
-EOF
+#    cat << EOF > /tmp/user_data_temp.sh
+##!/bin/bash
+#apt-get update -y && apt-get install -y wget
+#wget -qO- $SCRIPT_PREPARACAO_URL | bash
+#EOF
 
     # 1. Lançar a instância injetando o User Data e capturar o Instance ID
     launch_output=$(aws ec2 run-instances \
