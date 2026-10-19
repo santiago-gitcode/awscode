@@ -1,0 +1,576 @@
+#!/bin/bash
+# ==============================================================================
+# Script de Provisionamento - RickdiculouslyEasy para Debian (EC2)
+# ==============================================================================
+
+export DEBIAN_FRONTEND=noninteractive
+
+# 1. ATUALIZAÇÃO DO SISTEMA E INSTALAÇÃO DOS SERVIÇOS
+apt-get update -y
+apt-get install -y apache2 vsftpd openssh-server netcat-openbsd python3 curl unzip traceroute socat libssl-dev
+
+# 2. CRIAÇÃO DE USUÁRIOS COM HASHES SHA-512 
+# Senha da Summer: winter
+useradd -m -s /bin/bash -p '$y$j9T$OvtMS3NYprB8TwNXZVVx51$QZtuGJCSxqreDamGSX0hFELhRtHiziSolxAeOqYH498' Summer
+
+# Senha do RickSanchez: P7Curtains
+useradd -m -s /bin/bash -p '$y$j9T$DNN.oqO4SCbuY2QbZ1vnm0$BAOidPbR1MJXpTet8Z4hBVBHSlkyLbcTpVhfrmQjhL4' RickSanchez
+
+# Usuário Morty (geralmente descoberto por outros vetores)
+useradd -m -s /bin/bash Morty
+
+# Usuário Jerry (geralmente descoberto por outros vetores)
+useradd -m -s /bin/bash Jerry
+usermod -aG Jerry Summer
+chmod 750 /home/Jerry
+
+# Adicionar o Cofre na pasta RICKS_SAFE do home de Jerry
+mkdir /home/Jerry/RICKS_SAFE
+wget -q -O /home/Jerry/RICKS_SAFE/cofre "https://raw.githubusercontent.com/santiago-gitcode/awscode/refs/heads/main/ctf/desafio01/Cofre.bin"
+chmod 750 /home/Jerry/RICKS_SAFE/cofre
+chown Jerry:Jerry /home/Jerry/RICKS_SAFE/cofre
+
+# Incluir a imagem do Morty com Steganografia e permissão do Summer para acesso
+wget -q -O /home/Morty/Safe_Password.jpg "https://raw.githubusercontent.com/santiago-gitcode/awscode/refs/heads/main/ctf/desafio01/Image_Morty.jpg"
+
+chown Morty:Morty /home/Morty/Safe_Password.jpg
+chmod 640 /home/Morty/Safe_Password.jpg
+usermod -aG Morty Summer
+chmod 750 /home/Morty
+
+# Adicionar RickSanchez ao grupo sudoers (com privilégios de root)
+echo "RickSanchez ALL=(ALL:ALL) ALL" >> /etc/sudoers
+
+# Criar a Flag do usuário Summer
+echo "FLAG{Previsibilidade é o maior inimigo da segurança} - 10 Pontos" > /home/Summer/FLAG.txt
+chown Summer:Summer /home/Summer/FLAG.txt
+chmod 640 /home/Summer/FLAG.txt
+
+# Adiconando a Flag final na pasta /root
+echo "FLAG{ROOT Comprometido. Servidor Complemente Invadido!} - 30 Pontos" > /root/FLAG.txt
+chown root:root /root/FLAG.txt
+chmod 600 /root/FLAG.txt
+
+# Ajustes copia da chave da conta admin para RickSanchez
+mkdir /home/RickSanchez/.ssh
+mv /home/admin/.ssh/authorized_keys /home/RickSanchez/.ssh
+chown -R RickSanchez:RickSanchez /home/RickSanchez/.ssh
+chmod -R 700 /home/RickSanchez/.ssh
+userdel -r admin
+
+# ==========================================
+# 3. CONFIGURAÇÃO DO SERVIÇO FTP (Porta 21)
+# ==========================================
+# 1. Habilitar o login anônimo no arquivo de configuração principal
+sed -i 's/anonymous_enable=NO/anonymous_enable=YES/g' /etc/vsftpd.conf
+
+# 2. Configurar explicitamente a pasta raiz do usuário anônimo
+if ! grep -q "anon_root" /etc/vsftpd.conf; then
+    echo "anon_root=/srv/ftp" >> /etc/vsftpd.conf
+fi
+
+# 3. Criar a estrutura de diretórios
+mkdir -p /srv/ftp
+
+# 4. GERENCIAMENTO DE PERMISSÕES (Anônimo requer pasta root sem escrita)
+chown root:root /srv/ftp
+chmod 755 /srv/ftp
+
+# 5. Criar a Flag dentro da pasta (permissão de leitura pública)
+echo "FLAG{Eita, Temos um FTP com acesso anônimo ativado. :(  } - 10 Pontos" > /srv/ftp/flag.txt
+chown root:root /srv/ftp/flag.txt
+chmod 644 /srv/ftp/flag.txt
+
+# 6. Reiniciar o serviço para aplicar as novas diretrizes
+systemctl restart vsftpd
+
+# ==========================================
+# 4. CONFIGURAÇÃO DO APACHE (Portas 80, 9090 e CGI Tracertool)
+# ==========================================
+# Ativar os módulos necessários no Apache: CGI e SSL
+a2enmod cgi
+a2enmod ssl
+a2enconf serve-cgi-bin
+
+# Descomenta a linha AddDefaultCharset UTF-8 no arquivo de configuração do Apache
+sed -i 's/^#AddDefaultCharset UTF-8/AddDefaultCharset UTF-8/' /etc/apache2/conf-available/charset.conf
+
+# ---- CONFIGURAÇÃO DA PORTA 80 (HTTP Padrão) ----
+mkdir -p /var/www/html/passwords
+echo "FLAG{Simples, não deixe senhas em diretório públicos} - 10 Pontos" > /var/www/html/passwords/FLAG.txt
+
+cat << 'EOF' > /var/www/html/passwords/passwords.html
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Perdido</title>
+    <script>
+        document.addEventListener('contextmenu', event => event.preventDefault());
+
+        document.onkeydown = function(e) {
+            if(e.keyCode == 123) { return false; } 
+            if(e.ctrlKey && e.shiftKey && e.keyCode == 'I'.charCodeAt(0)) { return false; }   
+            if(e.ctrlKey && e.shiftKey && e.keyCode == 'J'.charCodeAt(0)) { return false; }      
+            if(e.ctrlKey && e.shiftKey && e.keyCode == 'C'.charCodeAt(0)) { return false; }
+            if(e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) { return false; }
+        }
+    </script>
+</head>
+<body>
+    <p>Nada para ver aqui... pelo menos para quem só usa o botão esquerdo do mouse. :)</p>
+    
+    <!-- APAGAR ISSO DEPOIS. A senha que estou usando: winter -->
+</body>
+</html>
+EOF
+
+# Obtém o conteúdo do index.html a partir da URL externa informada
+wget --no-check-certificate -q -O /var/www/html/index.html https://raw.githubusercontent.com/santiago-gitcode/awscode/refs/heads/main/ctf/desafio01/index-desafio1.txt
+
+# Gerando o robots.txt
+cat << 'EOF' > /var/www/html/robots.txt
+# Onde os motores de busca fecham os olhos, a sua busca pela flag apenas começou. :)
+
+/cgi-bin/root_shell.cgi
+/cgi-bin/tracertool.cgi
+/cgi-bin/*
+EOF
+
+# ---- CRIAÇÃO DA FERRAMENTA VULNERÁVEL (tracertool.cgi) ----
+mkdir -p /usr/lib/cgi-bin
+
+cat << 'EOF' > /usr/lib/cgi-bin/tracertool.cgi
+#!/usr/bin/env python3
+import os
+import sys
+import subprocess
+from urllib.parse import parse_qs
+
+print("Content-Type: text/html\n")
+print("""
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Rick's Traceroute Tool</title>
+</head>
+<body style="background-color: #1a1a1a; color: #00ff00; font-family: monospace; padding: 20px;">
+    <h2>[ Rick's Automated Traceroute Tool v0.5 ]</h2>
+    <form method="GET" action="/cgi-bin/tracertool.cgi">
+        <label>Enter Target IP or Domain: </label>
+        <input type="text" name="target" style="background-color: #333; color: #00ff00; border: 1px solid #00ff00; padding: 5px; width: 300px;" placeholder="e.g., 8.8.8.8">
+        <input type="submit" value="Run Traceroute" style="background-color: #00ff00; color: #000; border: none; padding: 5px 15px; cursor: pointer; font-weight: bold;">
+    </form>
+    <hr style="border-color: #00ff00;">
+    <h3>Execution Output:</h3>
+    <pre style="background-color: #000; padding: 15px; border: 1px dashed #00ff00; min-height: 100px; white-space: pre-wrap;">""")
+
+query_string = os.environ.get('QUERY_STRING', '')
+arguments = parse_qs(query_string)
+target_list = arguments.get('target', [])
+target = target_list[0] if target_list else None
+
+if target:
+    target = target.replace("cat", "CATONALEASH")
+    comando = f"traceroute -m 3 {target}"
+    try:
+        processo = subprocess.run(comando, shell=True, capture_output=True, text=True, timeout=15)
+        print(processo.stdout)
+        print(processo.stderr)
+    except subprocess.TimeoutExpired:
+        print("Error: Execution timed out.")
+    except Exception as e:
+        print(f"Internal Error: {str(e)}")
+else:
+    print("Waiting for input... Please enter a valid target.")
+
+print("""    </pre>
+</body>
+</html>
+""")
+EOF
+
+chown www-data:www-data /usr/lib/cgi-bin/tracertool.cgi
+chmod 755 /usr/lib/cgi-bin/tracertool.cgi
+
+# ---- CRIAÇÃO DA FERRAMENTA FAKE (root_shell.cgi) ----
+cat << 'EOF' > /usr/lib/cgi-bin/root_shell.cgi
+#!/bin/bash
+echo "Content-type: text/html; charset=UTF-8"
+echo ""
+
+CATONALEASH << 'HTML_EOF'
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Web Shell - Acesso Administrativo</title>
+    <style>
+        body {
+            background-color: #0a0a0a;
+            color: #00ff00;
+            font-family: 'Courier New', Courier, monospace;
+            padding: 20px;
+            font-size: 16px;
+        }
+        .header { 
+            border-bottom: 1px dashed #00ff00; 
+            padding-bottom: 10px; 
+            margin-bottom: 20px; 
+        }
+        .prompt { color: #00ff00; font-weight: bold; }
+        .cursor { 
+            display: inline-block; 
+            width: 10px; 
+            height: 1.2em; 
+            background-color: #00ff00; 
+            vertical-align: middle; 
+            animation: blink 1s step-end infinite; 
+        }
+        .error { color: #ff3333; margin-top: 20px; font-weight: bold; }
+        .system-msg { color: #aaaaaa; }
+        @keyframes blink { 50% { opacity: 0; } }
+    </style>
+</head>
+<body>
+    <div class="header">
+        Debian GNU/Linux 11 (bullseye) <br>
+        Console Administrativo Seguro - v3.1 (Modo Root)
+    </div>
+    
+    <div id="boot-sequence">
+        <p class="system-msg">Estabelecendo conexão reversa... [OK]</p>
+        <p class="system-msg" id="auth" style="display:none;">Bypassing authentication protocol... [OK]</p>
+        <p class="system-msg" id="priv" style="display:none;">Escalonando privilégios para UID 0 (root)... <span style="color: yellow">SUCESSO.</span></p>
+    </div>
+
+    <div id="terminal" style="display:none; margin-top: 20px;">
+        <span class="prompt">root@server:~#</span> <span id="typing"></span><span class="cursor"></span>
+    </div>
+
+    <div id="troll-message" class="error" style="display:none;">
+        [!] EXCEÇÃO CRÍTICA: EXPECTATIVA VS REALIDADE [!]<br><br>
+        Você achou mesmo que ia ganhar uma shell de root só seguindo um link do robots.txt?<br>
+        Isso aqui é um CTF, não um tutorial do YouTube. :) <br><br>
+        Se empenhe um pouco mais :).
+    </div>
+
+    <!-- 
+    =========================================================================
+      Você inspecionou o código fonte! Bom instinto. 
+      Mas a princesa está em outro castelo.
+      
+      (Sério, não tem nada útil nesse arquivo além de ironia).
+    =========================================================================
+    -->
+
+    <script>
+        // Simulador de suspense e digitação
+        setTimeout(() => { document.getElementById('auth').style.display = 'block'; }, 800);
+        setTimeout(() => { document.getElementById('priv').style.display = 'block'; }, 1800);
+        
+        setTimeout(() => {
+            document.getElementById('terminal').style.display = 'block';
+            const text = "whoami && cat /root/flags.txt";
+            let i = 0;
+            
+            function typeWriter() {
+                if (i < text.length) {
+                    document.getElementById("typing").innerHTML += text.charAt(i);
+                    i++;
+                    setTimeout(typeWriter, 100);
+                } else {
+                    setTimeout(() => {
+                        document.getElementById('troll-message').style.display = 'block';
+                    }, 800);
+                }
+            }
+            setTimeout(typeWriter, 15000);
+        }, 3000);
+    </script>
+</body>
+</html>
+HTML_EOF
+EOF
+
+chown www-data:www-data /usr/lib/cgi-bin/root_shell.cgi
+chmod 755 /usr/lib/cgi-bin/root_shell.cgi
+
+
+# ---- CONFIGURAÇÃO DA PORTA 9090 (HTTPS / Zeus Login Fake) ----
+if ! grep -q "Listen 9090" /etc/apache2/ports.conf; then
+    echo "Listen 9090" >> /etc/apache2/ports.conf
+fi
+
+mkdir -p /etc/apache2/ssl
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/apache2/ssl/zeus.key -out /etc/apache2/ssl/zeus.crt -subj "/C=US/ST=Earth/L=C-137/O=ZeusAdmin/OU=FakeLogin/CN=zeus-admin.local"
+
+cat << 'EOF' > /etc/apache2/sites-available/port9090.conf
+<VirtualHost *:9090>
+    DocumentRoot /var/www/html_9090
+    SSLEngine on
+    SSLCertificateFile /etc/apache2/ssl/zeus.crt
+    SSLCertificateKeyFile /etc/apache2/ssl/zeus.key
+    <Directory /var/www/html_9090>
+        Options Indexes FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
+</VirtualHost>
+EOF
+
+mkdir -p /var/www/html_9090
+
+# Obtém o conteúdo do index.html do zeus admin a partir da URL externa informada
+wget --no-check-certificate -q -O /var/www/html_9090/index.html https://raw.githubusercontent.com/santiago-gitcode/awscode/refs/heads/main/ctf/desafio01/index-desafio1-zeus.txt
+
+
+a2ensite port9090.conf
+
+# ---- HARDENING DO APACHE (Ocultar Versões/Assinaturas) ----
+# Desativa a assinatura no rodapé das páginas (ServerSignature Off)
+sed -i 's/^ServerSignature .*/ServerSignature Off/' /etc/apache2/conf-enabled/security.conf
+
+# Altera a exibição do cabeçalho HTTP para o modo de produção mínimo (ServerTokens Prod)
+sed -i 's/^ServerTokens .*/ServerTokens Prod/' /etc/apache2/conf-enabled/security.conf
+
+systemctl restart apache2
+
+# ==========================================
+# 5. CONFIGURAÇÃO DO SSH REAL (Apenas Porta 22222)
+# ==========================================
+sed -i 's/^#\?Port .*/Port 22222/' /etc/ssh/sshd_config
+sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config
+
+systemctl restart ssh
+
+# ==========================================
+# 6. PORTAS EM BACKGROUND (Netcat + SSH FAKE)
+# ==========================================
+mkdir -p /opt/ctf
+
+# ---- DESAFIO PORTA 60000 (Criação da Flag no Sistema) ----
+echo "FLAG {TOP, conseguiu mais uma. Leitura de arquivos improváveis} - 20 Pontos" > /home/RickSanchez/flag_60000.txt
+chown RickSanchez:RickSanchez /home/RickSanchez/flag_60000.txt
+mv /home/RickSanchez/flag_60000.txt /home/RickSanchez/-
+
+# ---- DESAFIO DO ARQUIVO ZIP CRIPTOGRAFADO (Home do Morty) ----
+# 1. Instalar o utilitário zip caso não esteja presente (essencial para criar o desafio)
+apt-get install -y zip
+
+# 2. Criar a pista oculta que ficará guardada dentro do ZIP seguro
+mkdir -p /tmp/morty_challenge
+cat << 'EOF' > /tmp/morty_challenge/morty_diario.txt
+FLAG{Quebra de senha do arquivo ZIP} - 20 Pontos
+
+Anotações do Morty:
+Jerry está escondendo algo muito grande no diretório dele.
+Numa conversa informal, ele falou algo sobre um cofre e uma senha. Ou talvez fosse uma senha segura, sei lá. 
+Acho que tem a ver com uma senha segura para um cofre.
+De qualquer forma. Aqui esta o que escutei:
+
+129865Fatec
+
+Boa Sorte.
+EOF
+
+# 3. Compactar o arquivo aplicando a senha secreta "meeseeks"
+# O parâmetro -P define a senha diretamente em lote pelo script de provisionamento
+cd /tmp/morty_challenge
+zip -P "meeseeks" journal.txt.zip morty_diario.txt
+
+# 4. Mover o ZIP para o diretório home do Morty com as permissões corretas
+mv journal.txt.zip /home/Morty/
+chown Morty:Morty /home/Morty/journal.txt.zip
+chmod 640 /home/Morty/journal.txt.zip
+
+# 5. Limpeza de rastros no diretório temporário
+rm -rf /tmp/morty_challenge
+cd /
+
+# ---- RICK'S RESTRICTED SHELL (Apenas ls, pwd, cd, cat, exit) ----
+cat << 'EOF' > /opt/ctf/restricted_shell.py
+#!/usr/bin/env python3
+import os
+import sys
+import subprocess
+
+JAIL_ROOT = '/home/RickSanchez'
+os.chdir(JAIL_ROOT)
+
+ALLOWED_COMMANDS = ['ls', 'pwd', 'cd', 'cat', 'tac', 'exit', 'quit']
+
+def print_prompt():
+    current_dir = os.getcwd()
+    sys.stdout.write(f"rick-shell:{current_dir}$ ")
+    sys.stdout.flush()
+
+sys.stdout.write("=== RICK'S SECURE TERMINAL v1.0 ===\r\n")
+sys.stdout.write("Aparentemente não tem nada. Mas será mesmo?\r\n")
+sys.stdout.flush()
+
+while True:
+    try:
+        print_prompt()
+        user_input = sys.stdin.readline()
+        if not user_input:
+            break
+        cmd_line = user_input.replace('\r', '').replace('\n', '').strip()
+        if not cmd_line:
+            continue
+        parts = cmd_line.split()
+        base_cmd = parts[0] if parts else ''
+        
+        if base_cmd not in ALLOWED_COMMANDS:
+            sys.stdout.write(f"bash: {base_cmd}: command not found\r\n")
+            sys.stdout.flush()
+            continue
+            
+        if ';' in cmd_line or '|' in cmd_line or '&' in cmd_line or '$' in cmd_line:
+            sys.stdout.write("Error: Character not allowed in secure mode.\r\n")
+            sys.stdout.flush()
+            continue
+
+        if base_cmd == 'exit':
+            sys.stdout.write("Goodbye!\r\n")
+            sys.stdout.flush()
+            break
+
+        if base_cmd == 'quit':
+            sys.stdout.write("Goodbye!\r\n")
+            sys.stdout.flush()
+            base_cmd = 'exit'
+            break
+
+        if base_cmd == 'cd':
+            target_dir = parts[1] if len(parts) > 1 else JAIL_ROOT
+            potential_dir = os.path.abspath(os.path.join(os.getcwd(), target_dir))
+            if potential_dir.startswith(JAIL_ROOT):
+                try:
+                    os.chdir(potential_dir)
+                except Exception as e:
+                    sys.stdout.write(f"cd: {str(e)}\r\n")
+            else:
+                sys.stdout.write("Permission denied: You cannot leave Rick's home directory!\r\n")
+            continue
+
+        if base_cmd == 'ls' and len(parts) > 1:
+            has_bypass_attempt = False
+            for arg in parts[1:]:
+                # Ignora flags como -all, -l, -a
+                if arg.startswith('-'):
+                    continue
+                
+                # Resolve o caminho absoluto do diretório/arquivo solicitado
+                potential_dir = os.path.abspath(os.path.join(os.getcwd(), arg))
+                
+                # Verifica se o alvo está fora do JAIL_ROOT
+                if not potential_dir.startswith(JAIL_ROOT):
+                    has_bypass_attempt = True
+                    break
+            
+            if has_bypass_attempt:
+                sys.stdout.write("Permission denied: You cannot list directories outside Rick's home!\r\n")
+                sys.stdout.flush()
+                continue
+
+        if base_cmd == 'cat':
+            parts[0] = 'CATONALEASH' 
+            
+            if len(parts) > 1:
+                has_bypass_attempt = False
+                for arg in parts[1:]:
+                    if arg.startswith('-'):
+                        continue
+                    potential_file = os.path.abspath(os.path.join(os.getcwd(), arg))
+                    if not potential_file.startswith(JAIL_ROOT):
+                        has_bypass_attempt = True
+                        break
+                if has_bypass_attempt:
+                    sys.stdout.write("Permission denied: Access restriction active.\r\n")
+                    sys.stdout.flush()
+                    continue
+
+        if base_cmd == 'tac' and len(parts) > 1:
+            has_bypass_attempt = False
+            for arg in parts[1:]:
+                if arg.startswith('-'):
+                    continue
+                potential_file = os.path.abspath(os.path.join(os.getcwd(), arg))
+                if not potential_file.startswith(JAIL_ROOT):
+                    has_bypass_attempt = True
+                    break
+            if has_bypass_attempt:
+                sys.stdout.write("Permission denied: Access restriction active.\r\n")
+                sys.stdout.flush()
+                continue
+
+        try:
+            result = subprocess.run(parts, capture_output=True, text=True, timeout=5)
+            stdout_fixed = result.stdout.replace('\n', '\r\n')
+            stderr_fixed = result.stderr.replace('\n', '\r\n')
+            sys.stdout.write(stdout_fixed)
+            sys.stdout.write(stderr_fixed)
+        except Exception as e:
+            error_msg = str(e).replace('CATONALEASH', 'cat')
+            sys.stdout.write(f"Execution error: {error_msg}\r\n")
+        sys.stdout.flush()
+    except KeyboardInterrupt:
+        sys.stdout.write("\r\nUse exit to leave.\r\n")
+        sys.stdout.flush()
+    except Exception:
+        break
+EOF
+
+chmod +x /opt/ctf/restricted_shell.py
+
+# ---- SCRIPT DO SOCAT para o shell da porta 60000 ----
+cat << 'EOF' > /opt/ctf/nc_60000.sh
+#!/bin/bash
+socat TCP-LISTEN:60000,reuseaddr,fork EXEC:"/opt/ctf/restricted_shell.py",pty,raw,echo=0
+EOF
+
+chmod +x /opt/ctf/nc_60000.sh
+
+# ---- DESAFIO PORTA 22 (SSH FAKE) ----
+cat << 'EOF' > /opt/ctf/ssh_fake.sh
+while true; do 
+    echo "SSH-2.0-OpenSSH_6.6.1p1 Ubuntu-2ubuntu2" | nc -l -p 22
+done
+EOF
+
+# ==========================================
+# 7 Troca do comando CAT - Trolagem
+# ==========================================
+mv /usr/bin/cat /usr/bin/CATONALEASH
+/usr/bin/CATONALEASH << 'EOF_OUTER' > /usr/bin/cat
+#!/bin/bash
+CATONALEASH << "EOF"
+   _____________
+  /             \                     _
+ |  Miauuuuuu!   |                   | \
+  \_____________/                    | |
+       \                             | |
+        \     |\                     | |
+             /, ~\                  / /
+            X     `-.....---------./ /
+             ~-. ~  ~                |
+                \               /    |
+                 \  /_     _____\   /
+                 | /\ ~~~~~     \   |
+                 | | \          ||  |
+                 | |\ \         ||  )
+                (_/ (_/         ((_/
+
+EOF
+EOF_OUTER
+chmod +x /usr/bin/cat
+
+# ---- DESAFIO PORTA 13337 ----
+echo 'while true; do echo "FLAG {Parabéns, você entrou minha backdoor !!} -10 Pontos" | nc -l -p 13337; done' > /opt/ctf/nc_13337.sh
+
+# Dar permissão e executar todos os listeners em background desvinculados do terminal
+chmod +x /opt/ctf/*.sh
+nohup /opt/ctf/ssh_fake.sh >/dev/null 2>&1 &
+nohup /opt/ctf/nc_13337.sh >/dev/null 2>&1 &
+nohup /opt/ctf/nc_60000.sh >/dev/null 2>&1 &
