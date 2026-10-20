@@ -1,26 +1,22 @@
 #!/bin/bash
-# CALL: wget -qO- https://raw.githubusercontent.com/santiago-gitcode/awscode/refs/heads/main/ctf/desafio01/CriaVMDesafio1 |sh
+# CALL: wget -qO- https://tinyurl.com/santiago-ctf1 |sh
 
 # URL do seu script de preparação hospedado no GitHub (O script com os desafios do Vulnhub)
-#SCRIPT_PREPARACAO_URL="https://raw.githubusercontent.com/santiago-gitcode/awscode/refs/heads/main/ctf/desafio01/Desafio1.sh"
 SCRIPT_PREPARACAO_URL="https://raw.githubusercontent.com/santiago-gitcode/awscode/refs/heads/main/ctf/desafio01/Desafio1.bin"
 
 # Imagem do Debian 13 (us-east-1)
 AMI_ID="ami-0f9c27b471bdcd702"   
 
 # Tipo da Instancia (Tamanho)
-INSTANCE_TIPO="m7i-flex.large"
-#INSTANCE_TIPO="t3.medium"
-
-# Nome da Chave .pem para acesso
+#INSTANCE_TIPO="m7i-flex.large"
+INSTANCE_TIPO="t3.micro"
 SERVER_NAME="ServerCTF1"
-KEY_NAME="chaveVM"
 
-KEY_PUB="chaveVM.pub"
-KEY_PUB_URL="https://tinyurl.com/chaveVMp"
 
-KEY_PRIV="chaveVM.pem"
-KEY_PRIV_URL="https://tinyurl.com/chaveVM"
+# Nome da Chave Pública do Ambiente
+KEY_NAME="chaveCTF"
+KEY_PUB="chaveCTF.pub"
+KEY_PUB_URL="https://tinyurl.com/chaveCTFp"
 
 # Verifica se a chave já existe
 existing_keys=$(aws ec2 describe-key-pairs --query "KeyPairs[?KeyName=='$KEY_NAME'].KeyName" --output text)
@@ -36,16 +32,16 @@ if [ -z "$existing_keys" ]; then
     if [ $? -eq 0 ]; then
         echo "Chave $KEY_NAME importada com sucesso!"
         rm -f $KEY_PUB
-        wget --no-check-certificate -qO- https://tinyurl.com/CriaVmLinux |sh
+        wget --no-check-certificate -qO- https://tinyurl.com/santiago-ctf1 |sh
     else
         echo "Erro ao importar a chave $KEY_NAME" >&2
         exit 1
     fi
 
 else
-
         # --- Revisão das instâncias criadas
         echo "Verificando instâncias existentes na conta..."
+
         # Busca IDs, Nomes e Tipos de instâncias que não foram terminadas
         instances=$(aws ec2 describe-instances \
             --filters "Name=instance-state-name,Values=pending,running,shutting-down,stopping,stopped" \
@@ -91,7 +87,7 @@ else
     aws ec2 authorize-security-group-ingress --group-id $SG_ID --protocol udp --port 0-65535 --cidr 0.0.0.0/0 > /dev/null 2>&1
 
 # ==============================================================================
-# CONFIGURAÇÃO DO USER DATA DINÂMICO (Compatível com o SHC)
+# CONFIGURAÇÃO DO USER DATA DINÂMICO 
 # ==============================================================================
 cat << EOF > /tmp/user_data_temp.sh
 #!/bin/bash
@@ -109,7 +105,7 @@ rm -f /tmp/provisionamento
 EOF
 
 # ==============================================================================
-# CONFIGURAÇÃO DO USER DATA DINÂMICO (sem o SHC)
+# CONFIGURAÇÃO DO USER DATA DINÂMICO
 # ==============================================================================
 
 #    cat << EOF > /tmp/user_data_temp.sh
@@ -118,7 +114,7 @@ EOF
 #wget -qO- $SCRIPT_PREPARACAO_URL | bash
 #EOF
 
-    # 1. Lançar a instância injetando o User Data e capturar o Instance ID
+    # Lançar a instância injetando o User Data e capturar o Instance ID
     launch_output=$(aws ec2 run-instances \
                 --image-id $AMI_ID \
                 --count 1 \
@@ -131,21 +127,21 @@ EOF
     # Remove o arquivo temporário local após o envio
     rm -f /tmp/user_data_temp.sh
 
-     # 2. Extrair o Instance ID
+     # Extrair o Instance ID
         instance_id=$(echo "$launch_output" | jq -r '.Instances[0].InstanceId')
         echo "$SERVER_NAME sendo criado: Instance ID: $instance_id"
 
-     # 3. Aguardar a instância estar no estado 'running'
+     # Aguardar a instância estar no estado 'running'
         aws ec2 wait instance-running --instance-ids "$instance_id"
 
-     # 4. Ativando o consulta de tag por IMDSv2
+     # Ativando o consulta de tag por IMDSv2
         aws ec2 modify-instance-metadata-options --instance-id "$instance_id" --instance-metadata-tags enabled > /dev/null 2>&1
 
-     # 5. Aguardar o provisionamento
+     # Aguardar o provisionamento
         echo "Aguardando por 30 segundos pela finalização da criação e execução da instância..."
         sleep 30  
 
-     # 6. Exibição do Resultado
+     # Exibição do Resultado
         public_ip=$(aws ec2 describe-instances \
                         --instance-ids "$instance_id" \
                         --query 'Reservations[0].Instances[0].PublicIpAddress' --output text)
