@@ -108,7 +108,7 @@ obter_tokens_s3() {
     if [ -z "$VOC_EMAIL_ID" ]; then
         echo "Erro: A variável VOC_EMAIL_ID não está definida neste terminal."
         echo "Operação cancelada."
-        exit 1
+        return 1
     fi
 
     # 2. Busca qual é o disco mapeado para esse e-mail
@@ -117,7 +117,7 @@ obter_tokens_s3() {
     # 3. Verifica se o e-mail possui um upstream configurado
     if [ -z "$SELECTED_UPSTREAM" ]; then
         echo "Erro: O usuário '$VOC_EMAIL_ID' não tem o upstream configurado no rclone."
-        exit 1
+        return 1
     fi
 
     echo "Usuário detectado: $VOC_EMAIL_ID"
@@ -128,7 +128,7 @@ obter_tokens_s3() {
     # 4. Valida e extrai as credenciais
     if [ ! -f "$ARQUIVO" ]; then
         echo "Erro: Arquivo '$ARQUIVO' não encontrado."
-        exit 1
+        return 1
     fi
 
     AK=$(grep -E "^aws_access_key_id" "$ARQUIVO" | cut -d '=' -f 2- | tr -d ' ' | tr -d '\r')
@@ -137,7 +137,7 @@ obter_tokens_s3() {
 
     if [ -z "$AK" ] || [ -z "$SK" ] || [ -z "$ST" ]; then
         echo "Erro: Não foi possível extrair todas as 3 chaves do arquivo."
-        exit 1
+        return 1
     fi
 
     # 5. Gera o comando PowerShell (aqui usamos o printf para blindar as barras invertidas)
