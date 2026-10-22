@@ -10,6 +10,21 @@ AZUL="\033[0;36m"
 RESET="\033[0m"
 
 # ==========================================
+# BLOQUEIA A CHAMADA ANTIGA (| sh)
+# ==========================================
+if ! (return 0 2>/dev/null); then
+    printf "\n"
+    printf "${VERMELHO}⚠️ ATENÇÃO: A forma de executar este laboratório mudou!${RESET}\n\n"
+    printf "Para que as credenciais da AWS funcionem corretamente no seu terminal, "
+    printf "você não pode mais usar o comando terminando em '| sh'.\n\n"
+    printf "${AZUL}Por favor, copie e cole o comando EXATO abaixo e pressione [Enter]:${RESET}\n\n"
+    printf "   ${VERDE}. <(wget -qO- https://codeinterno.git)${RESET}\n\n"
+    
+    # Aqui usamos exit 1 pois estamos em um subshell.
+    exit 1 
+fi
+
+# ==========================================
 # FUNÇÕES DE VALIDAÇÃO E ATUALIZAÇÃO DA AWS
 # ==========================================
 
@@ -93,7 +108,7 @@ listar_instancias_e_acesso() {
 
     # 5. Bloco informativo com instruções de acesso
     printf "\n"
-    printf "${AMARELO}ATENÇÃO:${RESET} Se sua instância foi criada pelo script awscode do Prof. Santiago ela pode ser acessível pela\n"
+    printf "${AZUL}ATENÇÃO:${RESET} Se sua instância foi criada pelo script awscode do Prof. Santiago ela pode ser acessível pela\n"
     printf "chave privada (.pem): ${VERDE}https://tinyurl.com/chavevm${RESET}\n"
     printf "\n"
     printf "Considere usar esse comando para copiar a chave para seu ambiente local:\n"
@@ -124,7 +139,7 @@ if [ -d "/home/vocuser" ]; then
     listar_instancias_e_acesso
 
 else
-    printf "${AZUL}Estamos no AWS Console${RESET}\n"
+    # printf "${AZUL}Estamos no AWS Console${RESET}\n"
     if valida_token; then
         listar_instancias_e_acesso 
     else
