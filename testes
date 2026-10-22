@@ -1,12 +1,13 @@
 # CALL: wget -qO- https://raw.githubusercontent.com/santiago-gitcode/awscode/refs/heads/main/testes |sh
+# CALL: . <(wget -qO- https://raw.githubusercontent.com/santiago-gitcode/awscode/refs/heads/main/testes)
 
 # Verificando se está no ambiente LL Vocareum
 if [ -d "/home/vocuser" ]; then
     echo "Estamos no ambiente Vocareum"
     
     # Verificando se é primeira execução para pedir o AWS Details
-    #if [ ! -z "$aws_access_key_id" ] && [ ! -z "$aws_secret_access_key" ] && [ ! -z "$aws_session_token" ]; then
-    if [ ! -z "$aws_access_key_id" ]; then
+    if [ ! -z "$aws_access_key_id" ] && [ ! -z "$aws_secret_access_key" ] && [ ! -z "$aws_session_token" ]; then
+    #if [ ! -z "$aws_access_key_id" ]; then
         echo "Variavel existe, processeguindo..."
     else
         echo "Variáveis não existe, solicitar a execução do AWS Details."
@@ -14,4 +15,3 @@ if [ -d "/home/vocuser" ]; then
 else
     echo "Estamos no AWS Console"
 fi
-echo 'Teste de Ambiente'
