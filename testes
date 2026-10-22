@@ -42,18 +42,57 @@ atualiza_token() {
             return 1
         fi
     else
-        printf "${VERMELHO}------------------------------------------------------------------------${RESET}\n"
+        printf "${AMARELO}------------------------------------------------------------------------${RESET}\n"
         printf "⚠️  ATENÇÃO: Credenciais da AWS não encontradas!\n"
-        printf "${VERMELHO}------------------------------------------------------------------------${RESET}\n"
+        printf "${AMARELO}------------------------------------------------------------------------${RESET}\n"
         printf "Para resolver, siga estes passos simples:\n\n"
-        printf "1. No topo da página do laboratório, clique no botão ${AMARELO}[AWS Details]${RESET}.\n"
+        printf "1. No topo da página do laboratório, clique no botão ${VERMELHO}[AWS Details]${RESET}.\n"
         printf "2. Copie as linhas das 3 variáveis de ambiente que vão aparecer.\n"
-        printf "3. Cole-as diretamente aqui no Terminal e pressione ${AMARELO}[Enter]${RESET}.\n"
+        printf "3. Cole-as diretamente aqui no Terminal e pressione ${VERMELHO}[Enter]${RESET}.\n"
         printf "4. Reexecute este script copiando e colando o comando abaixo:\n\n"
         printf "   ${VERDE}. <(wget -qO- https://codeinterno.git)${RESET}\n\n"
-        printf "${VERMELHO}------------------------------------------------------------------------${RESET}\n"
+        printf "${AMARELO}------------------------------------------------------------------------${RESET}\n"
         return 1
     fi
+}
+
+# ==========================================
+# FUNÇÃO DE LISTAGEM EC2 E ORIENTAÇÃO SSH
+# ==========================================
+listar_instancias_e_acesso() {
+    printf "${AZUL}Buscando instâncias ativas na sua conta AWS...${RESET}\n\n"
+    
+    # Exibe a tabela formatada das instâncias em execução
+    aws ec2 describe-instances --query "Reservations[*].Instances[*].{ \
+        \"1_Name\":Tags[?Key=='Name']|[0].Value, \
+        \"2_Tipo\":InstanceType, \
+        \"3_Zone\":Placement.AvailabilityZone, \
+        \"4_PublicIP\":PublicIpAddress}" \
+    --filters "Name=instance-state-name,Values=running" \
+    --output table
+
+    # Captura a lista de IPs públicos para o cálculo do alvo SSH
+    IP_LIST=$(aws ec2 describe-instances --filters "Name=instance-state-name,Values=running" --query "Reservations[*].Instances[*].PublicIpAddress" --output text 2>/dev/null)
+    QTD_IPS=$(echo "$IP_LIST" | wc -w)
+
+    # Define qual será o valor do IP na string final com base na contagem
+    if [ "$QTD_IPS" -eq 1 ]; then
+        ALVO_SSH="$IP_LIST"
+    else
+        ALVO_SSH="IP_DO_SEU_SERVIDOR"
+    fi
+
+    # Bloco informativo com instruções de acesso
+    printf "\n"
+    printf "${AMARELO}ATENÇÃO:${RESET} Se sua instância foi criada pelo script awscode do Prof. Santiago ela pode ser acessível pela\n"
+    printf "chave privada (.pem): ${VERDE}https://tinyurl.com{RESET}\n"
+    printf "\n"
+    printf "Considere usar esse comando para copiar a chave para seu ambiente local:\n"
+    printf "\n"
+    printf "CMD (Prompt de Comandos): ${VERMELHO}curl -fsSLk -o chaveVM.pem https://tinyurl.com{RESET}\n"
+    printf "\n"
+    printf "Acessando a VM: ${VERMELHO}ssh -i chaveVM.pem admin@%s${RESET}\n" "$ALVO_SSH"
+    printf "\n"
 }
 
 # ==========================================
@@ -62,14 +101,14 @@ atualiza_token() {
 
 # Verificando se está no ambiente LL Vocareum
 if [ -d "/home/vocuser" ]; then
-    printf "${VERDE}Estamos no ambiente Vocareum.${RESET}\n"
+    # printf "${VERDE}Estamos no ambiente Vocareum.${RESET}\n"
+    listar_instancias_e_acesso
     
     # Executa a validação usando a função
-    if valida_token; then
-        printf "${VERDE}✔ O token atual ainda é válido! Nenhuma atualização é necessária.${RESET}\n"
-    else
-        printf "${AMARELO}Token atual expirado ou inexistente. Tentando atualizar...${RESET}\n"
+    if ! valida_token; then
+        printf "${VERMELHO}Token atual expirado ou inexistente. Tentando atualizar...${RESET}\n"
         atualiza_token
+        listar_instancias_e_acesso
     fi
 else
     printf "${AZUL}Estamos no AWS Console${RESET}\n"
