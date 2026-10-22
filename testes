@@ -1,1 +1,2 @@
 # CALL: wget -qO- https://tinyurl.com/exibeIP |sh
+echo 'Teste de Ambiente'
