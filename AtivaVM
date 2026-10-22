@@ -1,113 +1,221 @@
-#!/bin/sh
-# CALL: wget -qO- https://tinyurl.com/ativavm | sh
+# CALL: . <(wget -qO- https://tinyurl.com/ativaVM)
+# CALL: https://tinyurl.com/ativaVM |sh  <-- Descontinuado
 
-echo "Buscando instâncias EC2 na sua conta AWS..."
+# ==========================================
+# DEFINIÇÃO DE CORES (ANSI)
+# ==========================================
+VERDE="\033[0;32m"
+AMARELO="\033[1;33m"
+VERMELHO="\033[0;31m"
+AZUL="\033[0;36m"
+RESET="\033[0m"
 
-# Arquivos temporários
-TMP_FILE=$(mktemp)
-MAP_FILE=$(mktemp)
-
-# Busca os dados e salva no arquivo temporário
-aws ec2 describe-instances \
-    --filters "Name=instance-state-name,Values=pending,running,shutting-down,stopping,stopped" \
-    --query "Reservations[*].Instances[*].[InstanceId, State.Name, Tags[?Key=='Name'].Value | [0]]" \
-    --output text > "$TMP_FILE"
-
-# Verifica se o arquivo tem conteúdo
-if [ ! -s "$TMP_FILE" ]; then
-    echo "Nenhuma instância encontrada."
-    rm -f "$TMP_FILE" "$MAP_FILE"
-    exit 0
+# ==========================================
+# BLOQUEIA A CHAMADA ANTIGA (| sh)
+# ==========================================
+# O teste [ ! -t 0 ] verifica se o File Descriptor 0 (stdin) NÃO é um terminal.
+if [ ! -t 0 ]; then
+    printf "\n"
+    printf "${VERMELHO} ATENÇÃO: A forma de executar este laboratório mudou!${RESET}\n\n"
+    printf "Para que as credenciais da AWS funcionem corretamente no seu terminal, "
+    printf "você não pode mais usar o comando terminando em '| sh'.\n\n"
+    printf "${AZUL}Por favor, copie e cole o comando EXATO abaixo e pressione [Enter]:${RESET}\n\n"
+    printf "   ${VERDE}. <(wget -qO- https://tinyurl.com/ativaVM)${RESET}\n\n"
+    
+    # Aqui usamos exit 1 pois estamos em um subshell.
+    exit 1 
 fi
 
-echo ""
-echo "------------------------------------------------------------------"
-printf "%-5s | %-20s | %-12s | %-15s\n" "Item" "Instance ID" "Status" "Nome"
-echo "------------------------------------------------------------------"
+# ==========================================
+# FUNÇÕES DE VALIDAÇÃO E ATUALIZAÇÃO DA AWS
+# ==========================================
 
-count=1
-# Lê o arquivo temporário
-while read -r id state name; do
-    if [ -z "$name" ] || [ "$name" = "None" ]; then
-        name="<Sem Nome>"
+# Função para validar se o token atual da AWS está ativo e funcional
+valida_token() {
+    # if aws sts get-caller-identity > /dev/null 2>&1; then
+    if aws ec2 describe-instances --max-items 1 > /dev/null 2>&1; then
+        return 0 # Sucesso
+    else
+        return 1 # Falha
     fi
-    
-    # Imprime na tela
-    printf "%-5s | %-20s | %-12s | %-15s\n" "[$count]" "$id" "$state" "$name"
-    
-    # Salva mapeamento: Número, ID, e Status Atual
-    echo "$count $id $state" >> "$MAP_FILE"
-    
-    count=$((count+1))
-done < "$TMP_FILE"
+}
 
-echo "------------------------------------------------------------------"
-echo ""
-
-echo "Gerenciador do AWS Academy:"
-echo "- As instâncias que você escolher serão LIGADAS (ou mantidas ligadas)."
-echo "- As instâncias que você NÃO escolher serão DESLIGADAS."
-echo "(DICA: Se apenas apertar ENTER, TODAS serão desligadas)"
-echo ""
-printf "Quais instâncias devem estar LIGADAS? (ex: 1 3): "
-read choices < /dev/tty
-
-START_IDS=""
-STOP_IDS=""
-
-# Lê o mapeamento para decidir quem liga e quem desliga
-while read -r num id state; do
-    manter="nao"
-    
-    # Avalia se a instância foi selecionada pelo usuário
-    for choice in $choices; do
-        if [ "$choice" = "$num" ]; then
-            manter="sim"
-            break
-        fi
-    done
-    
-    # Lógica de ação baseada na escolha e no status atual
-    if [ "$manter" = "sim" ]; then
-        # Se escolheu manter ligada, mas ela está 'stopped', coloca na fila de LIGAR
-        if [ "$state" = "stopped" ]; then
-            START_IDS="$START_IDS $id"
+# Função para criar/atualizar o arquivo de credenciais da AWS
+atualiza_token() {
+    if [ ! -z "$aws_access_key_id" ] && [ ! -z "$aws_secret_access_key" ] && [ ! -z "$aws_session_token" ]; then
+        printf "${AZUL}Atualizando o Token da Sessão com as novas variáveis...${RESET}\n"
+        
+        mkdir -p ~/.aws
+        chmod 664 ~/.aws/credentials
+        echo "[default]" > ~/.aws/credentials
+        echo "aws_access_key_id=$aws_access_key_id" >> ~/.aws/credentials
+        echo "aws_secret_access_key=$aws_secret_access_key" >> ~/.aws/credentials
+        echo "aws_session_token=$aws_session_token" >> ~/.aws/credentials
+        
+        # Validação final pós-atualização
+        if valida_token; then
+            printf "${VERDE}✔ Token atualizado e validado com sucesso!${RESET}\n"
+            return 0
+        else
+            printf "${VERMELHO}❌ Erro: As novas variáveis coladas parecem inválidas ou expiradas.${RESET}\n"
+            return 1
         fi
     else
-        # Se NÃO escolheu manter ligada, e ela está 'running' ou 'pending', coloca na fila de DESLIGAR
-        if [ "$state" = "running" ] || [ "$state" = "pending" ]; then
-            STOP_IDS="$STOP_IDS $id"
+        printf "${AMARELO}------------------------------------------------------------------------${RESET}\n"
+        printf "⚠️  ATENÇÃO: Credenciais da AWS não encontradas!\n"
+        printf "${AMARELO}------------------------------------------------------------------------${RESET}\n"
+        printf "Para resolver, siga estes passos simples:\n\n"
+        printf "1. No topo da página do laboratório, clique no botão ${VERMELHO}[AWS Details]${RESET}.\n"
+        printf "2. Copie as linhas das 3 variáveis de ambiente que vão aparecer, aws_access_key_id, aws_secret_access_key e aws_session_token.\n"
+        printf "3. Cole-as diretamente aqui no Terminal e pressione ${VERMELHO}[Enter]${RESET}.\n"
+        printf "4. Reexecute este script copiando e colando o comando abaixo:\n\n"
+        printf "   ${VERDE}. <(wget -qO- https://tinyurl.com/ativaVM)${RESET}\n\n"
+        printf "${AMARELO}------------------------------------------------------------------------${RESET}\n"
+        return 1
+    fi
+}
+
+# ==========================================
+# FUNÇÃO DE GERENCIAMENTO EC2
+# ==========================================
+gerencia_instancia() {
+	echo "Buscando instâncias EC2 na sua conta AWS..."
+
+	# Arquivos temporários
+	TMP_FILE=$(mktemp)
+	MAP_FILE=$(mktemp)
+
+	# Busca os dados e salva no arquivo temporário
+	aws ec2 describe-instances \
+		--filters "Name=instance-state-name,Values=pending,running,shutting-down,stopping,stopped" \
+		--query "Reservations[*].Instances[*].[InstanceId, State.Name, Tags[?Key=='Name'].Value | [0]]" \
+		--output text > "$TMP_FILE"
+
+	# Verifica se o arquivo tem conteúdo
+	if [ ! -s "$TMP_FILE" ]; then
+		echo "Nenhuma instância encontrada."
+		rm -f "$TMP_FILE" "$MAP_FILE"
+		return 1
+	fi
+
+	echo ""
+	echo "------------------------------------------------------------------"
+	printf "%-5s | %-20s | %-12s | %-15s\n" "Item" "Instance ID" "Status" "Nome"
+	echo "------------------------------------------------------------------"
+
+	count=1
+	# Lê o arquivo temporário
+	while read -r id state name; do
+		if [ -z "$name" ] || [ "$name" = "None" ]; then
+			name="<Sem Nome>"
+		fi
+		
+		# Imprime na tela
+		printf "%-5s | %-20s | %-12s | %-15s\n" "[$count]" "$id" "$state" "$name"
+		
+		# Salva mapeamento: Número, ID, e Status Atual
+		echo "$count $id $state" >> "$MAP_FILE"
+		
+		count=$((count+1))
+	done < "$TMP_FILE"
+
+	echo "------------------------------------------------------------------"
+	echo ""
+
+	echo "Gerenciador do AWS Academy:"
+	echo "- As instâncias que você escolher serão LIGADAS (ou mantidas ligadas)."
+	echo "- As instâncias que você NÃO escolher serão DESLIGADAS."
+	echo "(DICA: Se apenas apertar ENTER, TODAS serão desligadas)"
+	echo ""
+	printf "Quais instâncias devem estar LIGADAS? (ex: 1 3): "
+	read choices < /dev/tty
+
+	START_IDS=""
+	STOP_IDS=""
+
+	# Lê o mapeamento para decidir quem liga e quem desliga
+	while read -r num id state; do
+		manter="nao"
+		
+		# Avalia se a instância foi selecionada pelo usuário
+		for choice in $choices; do
+			if [ "$choice" = "$num" ]; then
+				manter="sim"
+				break
+			fi
+		done
+		
+		# Lógica de ação baseada na escolha e no status atual
+		if [ "$manter" = "sim" ]; then
+			# Se escolheu manter ligada, mas ela está 'stopped', coloca na fila de LIGAR
+			if [ "$state" = "stopped" ]; then
+				START_IDS="$START_IDS $id"
+			fi
+		else
+			# Se NÃO escolheu manter ligada, e ela está 'running' ou 'pending', coloca na fila de DESLIGAR
+			if [ "$state" = "running" ] || [ "$state" = "pending" ]; then
+				STOP_IDS="$STOP_IDS $id"
+			fi
+		fi
+	done < "$MAP_FILE"
+
+	# Limpa os arquivos temporários
+	rm -f "$TMP_FILE" "$MAP_FILE"
+
+	echo ""
+
+	# Executa as ações de LIGAR
+	if [ -n "$START_IDS" ]; then
+		echo "Iniciando instâncias selecionadas que estavam desligadas..."
+		aws ec2 start-instances \
+			--instance-ids $START_IDS \
+			--query "StartingInstances[*].{ID:InstanceId,Atual:CurrentState.Name,Anterior:PreviousState.Name}" \
+			--output table
+	fi
+
+	# Executa as ações de DESLIGAR
+	if [ -n "$STOP_IDS" ]; then
+		echo "Desligando as instâncias não selecionadas..."
+		aws ec2 stop-instances \
+			--instance-ids $STOP_IDS \
+			--query "StoppingInstances[*].{ID:InstanceId,Atual:CurrentState.Name,Anterior:PreviousState.Name}" \
+			--output table
+	fi
+
+	# Mensagem final se nada precisou ser feito
+	if [ -z "$START_IDS" ] && [ -z "$STOP_IDS" ]; then
+		echo "Todas as instâncias já estão no estado desejado. Nenhuma ação foi necessária."
+	else
+		echo ""
+		echo "Operação concluída com sucesso!"
+	fi
+
+}
+
+# ==========================================
+# FLUXO PRINCIPAL DO SCRIPT
+# ==========================================
+
+# Verificando se está no ambiente LL Vocareum
+if [ -d "/home/vocuser" ]; then
+    # Se o token NÃO for válido, tenta atualizar
+    if ! valida_token; then
+        printf "${VERMELHO}Token atual expirado ou inexistente. Tentando atualizar...${RESET}\n"
+        
+        # Se falhar na atualização, interrompe o fluxo (já que a msg de erro está na função)
+        if ! atualiza_token; then
+            return 1
         fi
     fi
-done < "$MAP_FILE"
+    
+    # Se chegou até aqui, o token está válido (ou já estava, ou acabou de ser atualizado)
+    gerencia_instancia
 
-# Limpa os arquivos temporários
-rm -f "$TMP_FILE" "$MAP_FILE"
-
-echo ""
-
-# Executa as ações de LIGAR
-if [ -n "$START_IDS" ]; then
-    echo "Iniciando instâncias selecionadas que estavam desligadas..."
-    aws ec2 start-instances \
-        --instance-ids $START_IDS \
-        --query "StartingInstances[*].{ID:InstanceId,Atual:CurrentState.Name,Anterior:PreviousState.Name}" \
-        --output table
-fi
-
-# Executa as ações de DESLIGAR
-if [ -n "$STOP_IDS" ]; then
-    echo "Desligando as instâncias não selecionadas..."
-    aws ec2 stop-instances \
-        --instance-ids $STOP_IDS \
-        --query "StoppingInstances[*].{ID:InstanceId,Atual:CurrentState.Name,Anterior:PreviousState.Name}" \
-        --output table
-fi
-
-# Mensagem final se nada precisou ser feito
-if [ -z "$START_IDS" ] && [ -z "$STOP_IDS" ]; then
-    echo "Todas as instâncias já estão no estado desejado. Nenhuma ação foi necessária."
 else
-    echo ""
-    echo "Operação concluída com sucesso!"
+    # printf "${AZUL}Estamos no AWS Console${RESET}\n"
+    if valida_token; then
+        gerencia_instancia 
+    else
+        printf "${VERMELHO}Erro: Sessão do AWS Console inválida ou expirada. Recarregue a página.${RESET}\n"
+    fi
 fi
