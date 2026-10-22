@@ -62,7 +62,20 @@ atualiza_token() {
 listar_instancias_e_acesso() {
     printf "${AZUL}Buscando instâncias ativas na sua conta AWS...${RESET}\n\n"
     
-    # Exibe a tabela formatada das instâncias em execução
+    # 1. Verifica de forma segura se existe ALGUMA instância rodando (mesmo sem IP público)
+    INSTANCIAS_ATIVAS=$(aws ec2 describe-instances --filters "Name=instance-state-name,Values=running" --query "Reservations[*].Instances[*].InstanceId" --output text 2>/dev/null)
+    
+    # Se a variável estiver vazia, não há instâncias rodando
+    if [ -z "$INSTANCIAS_ATIVAS" ]; then
+        printf "${VERMELHO}⚠️ Nenhuma instância EC2 criada ou em execução foi encontrada nesta conta.${RESET}\n\n"
+        return 0 # Sai da função imediatamente
+    fi
+
+    # 2. Se chegou aqui, existem instâncias. Vamos buscar os IPs públicos.
+    IP_LIST=$(aws ec2 describe-instances --filters "Name=instance-state-name,Values=running" --query "Reservations[*].Instances[*].PublicIpAddress" --output text 2>/dev/null)
+    QTD_IPS=$(echo "$IP_LIST" | wc -w)
+
+    # 3. Exibe a tabela formatada
     aws ec2 describe-instances --query "Reservations[*].Instances[*].{ \
         \"1_Name\":Tags[?Key=='Name']|[0].Value, \
         \"2_Tipo\":InstanceType, \
@@ -71,18 +84,14 @@ listar_instancias_e_acesso() {
     --filters "Name=instance-state-name,Values=running" \
     --output table
 
-    # Captura a lista de IPs públicos para o cálculo do alvo SSH
-    IP_LIST=$(aws ec2 describe-instances --filters "Name=instance-state-name,Values=running" --query "Reservations[*].Instances[*].PublicIpAddress" --output text 2>/dev/null)
-    QTD_IPS=$(echo "$IP_LIST" | wc -w)
-
-    # Define qual será o valor do IP na string final com base na contagem
+    # 4. Define qual será o valor do IP na string final com base na contagem
     if [ "$QTD_IPS" -eq 1 ]; then
         ALVO_SSH="$IP_LIST"
     else
         ALVO_SSH="IP_DO_SEU_SERVIDOR"
     fi
 
-    # Bloco informativo com instruções de acesso
+    # 5. Bloco informativo com instruções de acesso
     printf "\n"
     printf "${AMARELO}ATENÇÃO:${RESET} Se sua instância foi criada pelo script awscode do Prof. Santiago ela pode ser acessível pela\n"
     printf "chave privada (.pem): ${VERDE}https://tinyurl.com{RESET}\n"
@@ -94,6 +103,7 @@ listar_instancias_e_acesso() {
     printf "Acessando a VM: ${VERMELHO}ssh -i chaveVM.pem admin@%s${RESET}\n" "$ALVO_SSH"
     printf "\n"
 }
+
 
 # ==========================================
 # FLUXO PRINCIPAL DO SCRIPT
