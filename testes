@@ -107,7 +107,7 @@ if [ -d "/home/vocuser" ]; then
         
         # Se falhar na atualização, interrompe o fluxo (já que a msg de erro está na função)
         if ! atualiza_token; then
-            exit 1
+            return 1
         fi
     fi
     
