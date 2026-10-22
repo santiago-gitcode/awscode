@@ -18,7 +18,7 @@ if [ ! -t 0 ]; then
     printf "Para que as credenciais da AWS funcionem corretamente no seu terminal, "
     printf "você não pode mais usar o comando terminando em '| sh'.\n\n"
     printf "${AZUL}Por favor, copie e cole o comando EXATO abaixo e pressione [Enter]:${RESET}\n\n"
-    printf "   ${VERDE}. <(wget -qO- https://tinyurl.com/removeVM)${RESET}\n\n"
+    printf "   ${VERDE}. <(wget -qO- https://tinyurl.com/apagaVM)${RESET}\n\n"
     
     exit 1 
 fi
@@ -61,7 +61,7 @@ atualiza_token() {
         printf "2. Copie as linhas das 3 variáveis de ambiente que vão aparecer.\n"
         printf "3. Cole-as diretamente aqui no Terminal e pressione ${VERMELHO}[Enter]${RESET}.\n"
         printf "4. Reexecute este script copiando e colando o comando abaixo:\n\n"
-        printf "   ${VERDE}. <(wget -qO- https://tinyurl.com/removeVM)${RESET}\n\n"
+        printf "   ${VERDE}. <(wget -qO- https://tinyurl.com/apagaVM)${RESET}\n\n"
         printf "${AMARELO}------------------------------------------------------------------------${RESET}\n"
         return 1
     fi
