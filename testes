@@ -1,4 +1,5 @@
-# CALL: . <(wget -qO- https://raw.githubusercontent.com/santiago-gitcode/awscode/refs/heads/main/testes)
+# CALL: . <(wget -qO- https://tinyurl.com/exibeIP)
+# CALL: https://tinyurl.com/exibeIP |sh  <-- Descontinuado
 
 # ==========================================
 # DEFINIÇÃO DE CORES (ANSI)
@@ -15,11 +16,11 @@ RESET="\033[0m"
 # O teste [ ! -t 0 ] verifica se o File Descriptor 0 (stdin) NÃO é um terminal.
 if [ ! -t 0 ]; then
     printf "\n"
-    printf "${VERMELHO}⚠️ ATENÇÃO: A forma de executar este laboratório mudou!${RESET}\n\n"
+    printf "${VERMELHO} ATENÇÃO: A forma de executar este laboratório mudou!${RESET}\n\n"
     printf "Para que as credenciais da AWS funcionem corretamente no seu terminal, "
     printf "você não pode mais usar o comando terminando em '| sh'.\n\n"
     printf "${AZUL}Por favor, copie e cole o comando EXATO abaixo e pressione [Enter]:${RESET}\n\n"
-    printf "   ${VERDE}. <(wget -qO- https://codeinterno.git)${RESET}\n\n"
+    printf "   ${VERDE}. <(wget -qO- https://tinyurl.com/exibeIP)${RESET}\n\n"
     
     # Aqui usamos exit 1 pois estamos em um subshell.
     exit 1 
@@ -66,7 +67,7 @@ atualiza_token() {
         printf "2. Copie as linhas das 3 variáveis de ambiente que vão aparecer.\n"
         printf "3. Cole-as diretamente aqui no Terminal e pressione ${VERMELHO}[Enter]${RESET}.\n"
         printf "4. Reexecute este script copiando e colando o comando abaixo:\n\n"
-        printf "   ${VERDE}. <(wget -qO- https://codeinterno.git)${RESET}\n\n"
+        printf "   ${VERDE}. <(wget -qO- https://tinyurl.com/exibeIP)${RESET}\n\n"
         printf "${AMARELO}------------------------------------------------------------------------${RESET}\n"
         return 1
     fi
