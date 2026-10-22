@@ -4,15 +4,29 @@
 if [ -d "/home/vocuser" ]; then
     printf "Estamos no ambiente Vocareum. \n"
     
-    # Verificando se é primeira execução para pedir o AWS Details
-    if [ ! -z "$aws_access_key_id" ] && [ ! -z "$aws_secret_access_key" ] && [ ! -z "$aws_session_token" ]; then
-        printf "Atualizando o Token da Sessão. \n"
-        echo "[default]" > ~/.aws/credentials
-        echo "aws_access_key_id=$aws_access_key_id" >> ~/.aws/credentials
-        echo "aws_secret_access_key=$aws_secret_access_key" >> ~/.aws/credentials
-        echo "aws_session_token=$aws_session_token" >> ~/.aws/credentials
+    # 1. Valida se o token atual no arquivo ~/.aws/credentials já é válido e ativo
+    if aws sts get-caller-identity &> /dev/null; then
+        printf "O token atual ainda é válido! Nenhuma atualização é necessária. \n"
     else
-        echo "Variáveis não existe, solicitar a execução do AWS Details. E colar o resultado no Terminal antes de executar esse script"
+        printf "Token atual expirado ou inexistente. Tentando atualizar... \n"
+        
+        # 2. Se o token atual falhou, verifica se há novas variáveis no terminal para aplicar
+        if [ ! -z "$aws_access_key_id" ] && [ ! -z "$aws_secret_access_key" ] && [ ! -z "$aws_session_token" ]; then
+            printf "Atualizando o Token da Sessão com as novas variáveis. \n"
+            
+            mkdir -p ~/.aws
+            echo "[default]" > ~/.aws/credentials
+            echo "aws_access_key_id=$aws_access_key_id" >> ~/.aws/credentials
+            echo "aws_secret_access_key=$aws_secret_access_key" >> ~/.aws/credentials
+            echo "aws_session_token=$aws_session_token" >> ~/.aws/credentials
+            
+            # 3. Validação final pós-atualização para garantir que as novas chaves coladas funcionam
+            if ! aws sts get-caller-identity &> /dev/null; then
+                echo "Erro: As novas variáveis coladas parecem inválidas ou expiradas."
+            fi
+        else
+            echo "Variáveis não existem. Solicitar a execução do AWS Details e colar o resultado no Terminal antes de executar esse script."
+        fi
     fi
 else
     echo "Estamos no AWS Console"
