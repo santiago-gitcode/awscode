@@ -101,15 +101,24 @@ listar_instancias_e_acesso() {
 
 # Verificando se está no ambiente LL Vocareum
 if [ -d "/home/vocuser" ]; then
-    # printf "${VERDE}Estamos no ambiente Vocareum.${RESET}\n"
-    listar_instancias_e_acesso
-    
-    # Executa a validação usando a função
+    # Se o token NÃO for válido, tenta atualizar
     if ! valida_token; then
         printf "${VERMELHO}Token atual expirado ou inexistente. Tentando atualizar...${RESET}\n"
-        atualiza_token
-        listar_instancias_e_acesso
+        
+        # Se falhar na atualização, interrompe o fluxo (já que a msg de erro está na função)
+        if ! atualiza_token; then
+            exit 1
+        fi
     fi
+    
+    # Se chegou até aqui, o token está válido (ou já estava, ou acabou de ser atualizado)
+    listar_instancias_e_acesso
+
 else
     printf "${AZUL}Estamos no AWS Console${RESET}\n"
+    if valida_token; then
+        listar_instancias_e_acesso 
+    else
+        printf "${VERMELHO}Erro: Sessão do AWS Console inválida ou expirada. Recarregue a página.${RESET}\n"
+    fi
 fi
