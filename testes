@@ -67,7 +67,7 @@ listar_instancias_e_acesso() {
     
     # Se a variável estiver vazia, não há instâncias rodando
     if [ -z "$INSTANCIAS_ATIVAS" ]; then
-        printf "${VERMELHO}⚠️  Nenhuma instância EC2 criada ou em execução foi encontrada nesta conta.${RESET}\n\n"
+        printf "${VERMELHO}⚠️ \ Nenhuma instância EC2 criada ou em execução foi encontrada nesta conta.${RESET}\n\n"
         return 0 # Sai da função imediatamente
     fi
 
