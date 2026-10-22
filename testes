@@ -43,7 +43,7 @@ atualiza_token() {
         fi
     else
         printf "${VERMELHO}------------------------------------------------------------------------${RESET}\n"
-        printf "${AMARELO}⚠️  ATENÇÃO: Credenciais da AWS não encontradas!${RESET}\n"
+        printf "⚠️  ATENÇÃO: Credenciais da AWS não encontradas!\n"
         printf "${VERMELHO}------------------------------------------------------------------------${RESET}\n"
         printf "Para resolver, siga estes passos simples:\n\n"
         printf "1. No topo da página do laboratório, clique no botão ${AMARELO}[AWS Details]${RESET}.\n"
