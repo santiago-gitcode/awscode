@@ -32,7 +32,8 @@ fi
 
 # Função para validar se o token atual da AWS está ativo e funcional
 valida_token() {
-    if aws sts get-caller-identity > /dev/null 2>&1; then
+    # if aws sts get-caller-identity > /dev/null 2>&1; then
+    if aws ec2 describe-instances --max-items 1 > /dev/null 2>&1; then
         return 0 # Sucesso
     else
         return 1 # Falha
