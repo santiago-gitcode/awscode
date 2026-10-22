@@ -67,7 +67,7 @@ listar_instancias_e_acesso() {
     
     # Se a variável estiver vazia, não há instâncias rodando
     if [ -z "$INSTANCIAS_ATIVAS" ]; then
-        printf "${VERMELHO}⚠️ \ Nenhuma instância EC2 criada ou em execução foi encontrada nesta conta.${RESET}\n\n"
+        printf "${VERMELHO} Nenhuma instância EC2 criada ou em execução foi encontrada nesta conta.${RESET}\n\n"
         return 0 # Sai da função imediatamente
     fi
 
@@ -94,16 +94,15 @@ listar_instancias_e_acesso() {
     # 5. Bloco informativo com instruções de acesso
     printf "\n"
     printf "${AMARELO}ATENÇÃO:${RESET} Se sua instância foi criada pelo script awscode do Prof. Santiago ela pode ser acessível pela\n"
-    printf "chave privada (.pem): ${VERDE}https://tinyurl.com{RESET}\n"
+    printf "chave privada (.pem): ${VERDE}https://tinyurl.com/chavevm${RESET}\n"
     printf "\n"
     printf "Considere usar esse comando para copiar a chave para seu ambiente local:\n"
     printf "\n"
-    printf "CMD (Prompt de Comandos): ${VERMELHO}curl -fsSLk -o chaveVM.pem https://tinyurl.com{RESET}\n"
+    printf "CMD (Prompt de Comandos): ${VERMELHO}curl -fsSLk -o chaveVM.pem https://tinyurl.com/chavevm${RESET}\n"
     printf "\n"
     printf "Acessando a VM: ${VERMELHO}ssh -i chaveVM.pem admin@%s${RESET}\n" "$ALVO_SSH"
     printf "\n"
 }
-
 
 # ==========================================
 # FLUXO PRINCIPAL DO SCRIPT
