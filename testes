@@ -12,7 +12,8 @@ RESET="\033[0m"
 # ==========================================
 # BLOQUEIA A CHAMADA ANTIGA (| sh)
 # ==========================================
-if ! (return 0 2>/dev/null); then
+# O teste [ ! -t 0 ] verifica se o File Descriptor 0 (stdin) NÃO é um terminal.
+if [ ! -t 0 ]; then
     printf "\n"
     printf "${VERMELHO}⚠️ ATENÇÃO: A forma de executar este laboratório mudou!${RESET}\n\n"
     printf "Para que as credenciais da AWS funcionem corretamente no seu terminal, "
@@ -30,7 +31,7 @@ fi
 
 # Função para validar se o token atual da AWS está ativo e funcional
 valida_token() {
-    if aws sts get-caller-identity &> /dev/null; then
+    if aws sts get-caller-identity > /dev/null 2>&1; then
         return 0 # Sucesso
     else
         return 1 # Falha
