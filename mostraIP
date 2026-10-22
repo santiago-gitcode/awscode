@@ -65,7 +65,7 @@ atualiza_token() {
         printf "${AMARELO}------------------------------------------------------------------------${RESET}\n"
         printf "Para resolver, siga estes passos simples:\n\n"
         printf "1. No topo da página do laboratório, clique no botão ${VERMELHO}[AWS Details]${RESET}.\n"
-        printf "2. Copie as linhas das 3 variáveis de ambiente que vão aparecer.\n"
+        printf "2. Copie as linhas das 3 variáveis de ambiente que vão aparecer, aws_access_key_id, aws_secret_access_key e aws_session_token.\n"
         printf "3. Cole-as diretamente aqui no Terminal e pressione ${VERMELHO}[Enter]${RESET}.\n"
         printf "4. Reexecute este script copiando e colando o comando abaixo:\n\n"
         printf "   ${VERDE}. <(wget -qO- https://tinyurl.com/exibeIP)${RESET}\n\n"
