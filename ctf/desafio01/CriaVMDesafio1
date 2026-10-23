@@ -201,10 +201,12 @@ EOF
         --query 'Reservations[0].Instances[0].PublicIpAddress' \
         --output text)
 
-    printf "--------------------------------------------------\n\n"
+    echo "--------------------------------------------------"
+    echo ""
     printf "${VERMELHO}${SERVER_NAME} Criado com Sucesso!!${RESET}\n"
 	printf "IP da Instância: ${VERMELHO}${public_ip}${RESET}\n\n"
-    printf "--------------------------------------------------\n\n"
+    echo "--------------------------------------------------"
+    echo ""
 }
 
 # ==========================================
