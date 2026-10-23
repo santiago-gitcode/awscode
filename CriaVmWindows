@@ -76,7 +76,7 @@ criaVM(){
     INSTANCE_TIPO="t3.medium"
 
     # Nome da Instância e Chave
-    SERVER_NAME="ServerAD"
+    SERVER_NAME="WindowsServer"
     KEY_NAME="chaveVM"
 
     KEY_PUB="chaveVM.pub"
