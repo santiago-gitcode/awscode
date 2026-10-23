@@ -205,7 +205,7 @@ criaVM(){
         echo "--------------------------------------------------"
         printf "Senha do Administrator: ${VERMELHO}${password_data}${RESET}\n"
         echo "--------------------------------------------------"
-        printf "IP: ${VERMELHO}${public_ip}${RESET}\n"
+        printf "IP: ${VERMELHO}${public_ip}${RESET}\n\n"
 
     else
         echo "ERRO: Não foi possível obter a senha após $max_attempts tentativas"
