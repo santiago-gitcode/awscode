@@ -108,7 +108,7 @@ remove_instancia() {
     echo ""
 
     printf "${VERMELHO}Aviso: A remoção (Terminate) apagará permanentemente a máquina e seus dados!${RESET}\n"
-    printf "%s\n" "- Para remover instâncias específicas, digite os números (ex: 1 3).\n"
+    printf "%s\n" "- Para remover instâncias específicas, digite os números (ex: 1 3)."
     printf "%b\n" "- Para apagar TODAS instâncias da lista de uma vez, digite: ${VERMELHO}remover_todas${RESET}\n"
     printf "(DICA: Se apenas apertar ENTER, nenhuma ação será tomada)\n\n"
     
@@ -143,8 +143,10 @@ remove_instancia() {
             --output table
         echo ""
         echo "✔ Instâncias enviadas para remoção com sucesso!"
+        echo ""
     else
         echo "Nenhuma instância foi selecionada. Operação cancelada."
+        echo ""
     fi
 }
 
