@@ -203,9 +203,10 @@ criaVM(){
             --query 'Reservations[0].Instances[0].PublicIpAddress' \
             --output text)
         echo "--------------------------------------------------"
-        echo "Senha do Administrador: $password_data"
+        printf "Senha do Administrator: ${VERMELHO}${password_data}${RESET}\n"
         echo "--------------------------------------------------"
-        echo "IP: $public_ip"
+        printf "IP: ${VERMELHO}${public_ip}${RESET}\n"
+
     else
         echo "ERRO: Não foi possível obter a senha após $max_attempts tentativas"
         echo "Verifique manualmente com:"
