@@ -14,7 +14,7 @@ RESET="\033[0m"
 # ==========================================
 if [ ! -t 0 ]; then
     printf "\n"
-    printf "${VERMELHO}⚠️ ATENÇÃO: A forma de executar este laboratório mudou!${RESET}\n\n"
+    printf "${VERMELHO} ATENÇÃO: A forma de executar este laboratório mudou!${RESET}\n\n"
     printf "Para que as credenciais da AWS funcionem corretamente no seu terminal, "
     printf "você não pode mais usar o comando terminando em '| sh'.\n\n"
     printf "${AZUL}Por favor, copie e cole o comando EXATO abaixo e pressione [Enter]:${RESET}\n\n"
